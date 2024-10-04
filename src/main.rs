@@ -42,4 +42,3 @@ fn main() -> Result<(), anyhow::Error> {
             //println!("Total records processed: {}", read_counter);
             Ok(())
 }
-

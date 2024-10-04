@@ -1,6 +1,5 @@
 //! # A Genbank to GFF parser
 //!
-//! The aim of this crate is to provide Microbiology friendly Rust functions for bioinformatics.
 //!
 //! You are able to parse genbank and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
 //!
@@ -33,7 +32,6 @@
 //!            let file_gbk = fs::File::open(config.filename)?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
-//!            let mut cds_counter: u32 = 0;
 //!            loop {
 //!                //collect from each record advancing on a next record basis, count cds records
 //!                match records.next() {	
@@ -45,17 +43,12 @@
 //!						              },
 //!				             _ => (),
 //!				             };
-//!		       
 //!		                         }
-//!		                         cds_counter+=1;
 //!                                      },
 //!	               Some(Err(e)) => { println!("Error encountered - an err {:?}", e); },
-//!	               None => {
-//!	                     println!("finished iteration");
-//!	                     break; },
+//!	               None => break,
 //!	               }
 //!                 }
-//!            println!("Total records processed: {}", read_counter);
 //!            return Ok(());
 //!  }
 //!```
@@ -573,7 +566,7 @@ where
 			    }
 			if self.line_buffer.contains("/product") {
 		            let prod: Vec<&str> = self.line_buffer.split('\"').collect();
-			    product = substitute_weird_punctuation(prod[1].to_string());
+			    product = substitute_odd_punctuation(prod[1].to_string());
 			    //println!("designated product {:?} {:?}", &product, &locus_tag);
 			    }
 			if self.line_buffer.starts_with("     CDS") || self.line_buffer.starts_with("ORIGIN") || self.line_buffer.starts_with("     gene") || self.line_buffer.starts_with("     misc_feature") {
@@ -831,7 +824,7 @@ create_builder!(
     strand { value: i8 }
 );
 
-
+///stores the sequences of the coding sequences (genes) and proteins. Also stores start, stop, codon_start and strand information
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SequenceAttributes {
     start { value: RangeValue },
@@ -874,9 +867,9 @@ create_builder!(
     strand { value: i8 }
 );
 
-///product lines can contain difficult to parse punctuation such as single quote, superscripts, single and double brackets etc.
+///product lines can contain difficult to parse punctuation such as biochemical symbols like unclosed single quotes, superscripts, single and double brackets etc.
 ///here we substitute these for an underscore
-pub fn substitute_weird_punctuation(input: String) -> String {
+pub fn substitute_odd_punctuation(input: String) -> String {
     let re = Regex::new(r"[/?()',`]|[α-ωΑ-Ω]").unwrap();
     let suf = &input
         .strip_suffix("\r\n")
