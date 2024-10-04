@@ -1,0 +1,17 @@
+[package]
+name = "microBioRust"
+version = "0.1.0-alpha"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+paste = "1.0"
+itertools="0.10.1"
+protein-translate="0.2.0"
+bio="0.37.1"
+anyhow="1.0"
+thiserror="1.0"
+regex="1.5"
+chrono = "0.4.38"
+clap = { version = "4.5.19", features = ["derive"] }
