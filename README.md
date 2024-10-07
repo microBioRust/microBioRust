@@ -1,5 +1,5 @@
 # microBioRust
-##Rust bioinformatics crate aimed at Microbial genomics<br>
+## A Rust bioinformatics crate aimed at Microbial genomics<br>
 The aim of this crate is to provide Microbiology friendly Rust functions for bioinformatics.<br>
 
 Very much under construction!<br>
