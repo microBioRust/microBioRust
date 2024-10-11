@@ -9,6 +9,8 @@ Some concepts with many thanks to Rust-bio<br>
 To install Rust - please see here [Rust install](https://www.rust-lang.org/tools/install) or with Conda<br>
 If you would like to contribute please follow the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct)
 
+Questions and comments - please join the Discord server :) [here](https://discord.gg/xP2ngwTttz)
+
 Currently there is functionality for:<br>
 
  # A Genbank to GFF parser
