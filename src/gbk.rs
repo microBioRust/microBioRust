@@ -237,11 +237,11 @@ use chrono::prelude::*;
 macro_rules! create_getters {
     // macro for creating get methods
     ($struct_name:ident, $attributes:ident, $enum_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
-        impl $struct_name {
+		impl $struct_name {
             $(
 	        // creates a get method for each of the fields in the SourceAttributes, FeatureAttributes and SequenceAttributes
 	        paste! {
-                  pub fn [<get_$field>](&self, key: &str) -> Option<&$type> {
+                  pub fn [<get_$field:snake>](&self, key: &str) -> Option<&$type> {
                     // Get the HashSet for the key (e.g., "source_1")
                     self.$attributes.get(key).and_then(|set| {
                         // Iterate over the HashSet to find the correct SourceAttributes value
@@ -291,7 +291,7 @@ macro_rules! create_builder {
             // function to set each of the alternative fields in the builder
             $(
 	      paste! { 
-	        pub fn [<set_$field>](&mut self, value: $type) -> &mut Self {
+	        pub fn [<set_$field:snake>](&mut self, value: $type) -> &mut Self {
 	           self.insert_to($enum_name::$field { value });
 		   self
 	           }
@@ -625,20 +625,20 @@ where
 	              for value in val {
 		          //println!("this is key {:?} value {:?}", &key, &value);
 	                  match value {
-		               FeatureAttributes::start { value } => a = match value {
+		               FeatureAttributes::Start { value } => a = match value {
 		                   RangeValue::Exact(v) => Some(*v),
                                    RangeValue::LessThan(v) => Some(*v), // Assign the value even if it's <value
                                    RangeValue::GreaterThan(v) => Some(*v), //Assign the value even it's > value
                                    },
-		               FeatureAttributes::stop { value } => b = match value {
+		               FeatureAttributes::Stop { value } => b = match value {
 		                   RangeValue::Exact(v) => Some(*v),
                                    RangeValue::LessThan(v) => Some(*v), // Assign the value even if it's <value
                                    RangeValue::GreaterThan(v) => Some(*v), //Assign the value even if it's > value
                                    },
-		               FeatureAttributes::strand { value } => c = match value {
+		               FeatureAttributes::Strand { value } => c = match value {
 		                  value => Some(*value),
 			          },
-		               FeatureAttributes::codon_start { value } => d = match value {
+		               FeatureAttributes::CodonStart { value } => d = match value {
 		                  value => Some(value.clone()),
 			          },
 		               _ => (),
@@ -731,14 +731,14 @@ impl RangeValue {
 ///stores the details of the source features in genbank (contigs)
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SourceAttributes {
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    organism { value: String },
-    mol_type { value: String},
-    strain { value: String},
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Organism { value: String },
+    MolType { value: String},
+    Strain { value: String},
     CultureCollection { value: String},
-    type_material { value: String},
-    db_xref { value:String}
+    TypeMaterial { value: String},
+    DbXref { value:String}
 }
 
 ///macro for creating the getters
@@ -746,14 +746,14 @@ create_getters!(
     SourceAttributeBuilder,
     source_attributes,
     SourceAttributes,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    organism { value: String},
-    mol_type { value: String},
-    strain { value: String},
-  //  CultureCollection { value: String},
-    type_material { value: String},
-    db_xref { value: String}
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Organism { value: String },
+    MolType { value: String},
+    Strain { value: String},
+    // CultureCollection { value: String},
+    TypeMaterial { value: String},
+    DbXref { value:String}
 );
 
 ///builder for the source information on a per record basis
@@ -763,31 +763,56 @@ pub struct SourceAttributeBuilder {
     source_name: Option<String>,
 }
 
+impl SourceAttributeBuilder {
+    // Method to set source name
+    pub fn set_source_name(&mut self, name: String) {
+        self.source_name = Some(name);
+    }
+
+    // Method to get source name
+    pub fn get_source_name(&self) -> Option<&String> {
+        self.source_name.as_ref()
+    }
+
+    // Method to add source attributes
+    pub fn add_source_attribute(&mut self, key: String, attribute: SourceAttributes) {
+        self.source_attributes
+            .entry(key)
+            .or_insert_with(HashSet::new)
+            .insert(attribute);
+    }
+
+    // Method to retrieve source attributes for a given key
+    pub fn get_source_attributes(&self, key: &str) -> Option<&HashSet<SourceAttributes>> {
+        self.source_attributes.get(key)
+    }
+}
+
 
 create_builder!(
     SourceAttributeBuilder,
     source_attributes,
     SourceAttributes,
     source_name,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    organism { value: String},
-    mol_type { value: String},
-    strain { value: String},
-  //  CultureCollection { value: String},
-    type_material { value: String},
-    db_xref { value: String}
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Organism { value: String },
+    MolType { value: String},
+    Strain { value: String},
+    // CultureCollection { value: String},
+    TypeMaterial { value: String},
+    DbXref { value:String}
 );
 
 ///attributes for each feature, cds or gene
 #[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub enum FeatureAttributes {
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    gene { value: String },
-    product { value: String },
-    codon_start { value: u8 },
-    strand { value: i8 },
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Gene { value: String },
+    Product { value: String },
+    CodonStart { value: u8 },
+    Strand { value: i8 },
  //   ec_number { value: String }
 }
 
@@ -796,12 +821,12 @@ create_getters!(
     FeatureAttributeBuilder,
     attributes,
     FeatureAttributes,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    gene { value: String },
-    product { value: String },
-    codon_start { value: u8 },
-    strand { value: i8 }
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Gene { value: String },
+    Product { value: String },
+    CodonStart { value: u8 },
+    Strand { value: i8 }
 );
 
 ///builder for the feature information on a per coding sequence (CDS) basis
@@ -816,35 +841,35 @@ create_builder!(
     attributes,
     FeatureAttributes,
     locus_tag,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    gene { value: String },
-    product { value: String },
-    codon_start { value: u8 },
-    strand { value: i8 }
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    Gene { value: String },
+    Product { value: String },
+    CodonStart { value: u8 },
+    Strand { value: i8 }
 );
 
 ///stores the sequences of the coding sequences (genes) and proteins. Also stores start, stop, codon_start and strand information
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SequenceAttributes {
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    sequence_ffn { value: String },
-    sequence_faa { value: String },
-    codon_start { value: u8 },
-    strand { value: i8 },
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    SequenceFfn { value: String },
+    SequenceFaa { value: String },
+    CodonStart { value: u8 },
+    Strand { value: i8 },
 }
 
 create_getters!(
     SequenceAttributeBuilder,
     seq_attributes,
     SequenceAttributes,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    sequence_ffn { value: String},
-    sequence_faa { value: String},
-    codon_start { value: u8},
-    strand { value: i8}
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    SequenceFfn { value: String},
+    SequenceFaa { value: String},
+    CodonStart { value: u8},
+    Strand { value: i8}
 );
 
 ///builder for the sequence information on a per coding sequence (CDS) basis
@@ -859,12 +884,12 @@ create_builder!(
     seq_attributes,
     SequenceAttributes,
     locus_tag,
-    start { value: RangeValue },
-    stop { value: RangeValue },
-    sequence_ffn { value: String},
-    sequence_faa { value: String},
-    codon_start { value: u8 },
-    strand { value: i8 }
+    Start { value: RangeValue },
+    Stop { value: RangeValue },
+    SequenceFfn { value: String},
+    SequenceFaa { value: String},
+    CodonStart { value: u8 },
+    Strand { value: i8 }
 );
 
 ///product lines can contain difficult to parse punctuation such as biochemical symbols like unclosed single quotes, superscripts, single and double brackets etc.
