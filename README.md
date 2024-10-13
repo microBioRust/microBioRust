@@ -136,7 +136,7 @@ Currently there is functionality for:<br>
               .set_organism("Escherichia coli".to_string())
               .set_mol_type("DNA".to_string())
               .set_strain("K-12 substr. MG1655".to_string())
-              .set_type_material("".to_string())
+              .set_type_material("type strain of Escherichia coli K12".to_string())
               .set_db_xref("PRJNA57779".to_string());
          //Add the features into FeatureAttributes, here we are setting two features, i.e. coding sequences or genes
          record.cds
