@@ -1,14 +1,14 @@
-//! # A Genbank to GFF parser
+//! # An EMBL to GFF parser
 //!
 //!
-//! You are able to parse genbank and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
+//! You are able to parse EMBL file format and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
 //!
-//! You can also create new records and save as a genbank (gbk) format
+//! You can also create new records and save as a EMBL (embl) format
 //!
 //! ## Detailed Explanation
 //!
 //!
-//! The Genbank parser contains:
+//! The EMBL parser contains:
 //!
 //! Records - a top level structure which consists of either one record (single genbank) or multiple instances of record (multi-genbank).
 //!
@@ -23,14 +23,14 @@
 //!
 //!
 //!```rust
-//! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+//! pub fn embl_to_faa() -> Result<(), anyhow::Error> {
 //!             let args: Vec<String> = env::args().collect();
 //!             let config = Config::new(&args).unwrap_or_else(|err| {
 //!                println!("Problem with parsing file arguments: {}", err);
 //!	           process::exit(1);
 //!	           });
-//!            let file_gbk = fs::File::open(config.filename)?;
-//!            let mut reader = Reader::new(file_gbk);
+//!            let file_embl = fs::File::open(config.filename)?;
+//!            let mut reader = Reader::new(file_embl);
 //!            let mut records = reader.records();
 //!            loop {
 //!                //collect from each record advancing on a next record basis, count cds records
@@ -54,20 +54,20 @@
 //!```
 //!
 //!
-//!  Example to save a provided multi- or single genbank file as a GFF file (by joining any multi-genbank)
+//!  Example to save a provided multi- or single embl file as a GFF file (by joining any multi-embl)
 //!
 //!
 //! ```rust
-//!    pub fn genbank_to_gff() -> io::Result<()> {
+//!    pub fn embl_to_gff() -> io::Result<()> {
 //!        let args: Vec<String> = env::args().collect();
 //!        let config = Config::new(&args).unwrap_or_else(|err| {
 //!            println!("Problem with parsing file arguments: {}", err);
 //!	       process::exit(1);
 //!	       });
-//!        let file_gbk = fs::File::open(&config.filename)?;
+//!        let file_embl = fs::File::open(&config.filename)?;
 //!        let prev_start: u32 = 0;
 //!        let mut prev_end: u32 = 0;
-//!        let mut reader = Reader::new(file_gbk);
+//!        let mut reader = Reader::new(file_embl);
 //!        let mut records = reader.records();
 //!        let mut read_counter: u32 = 0;
 //!        let mut seq_region: BTreeMap<String, (u32,u32)> = BTreeMap::new();
@@ -136,7 +136,7 @@
 //!	         .set_organism("Escherichia coli".to_string())
 //!	         .set_mol_type("DNA".to_string())
 //!	         .set_strain("K-12 substr. MG1655".to_string())
-//!		 .set_type_material("type strain of Escherichia coli K12".to_string())
+//!		 .set_type_material("".to_string())
 //!	         .set_db_xref("PRJNA57779".to_string());
 //!         //Add the features into FeatureAttributes, here we are setting two features, i.e. coding sequences or genes
 //!	    record.cds
@@ -237,11 +237,11 @@ use chrono::prelude::*;
 macro_rules! create_getters {
     // macro for creating get methods
     ($struct_name:ident, $attributes:ident, $enum_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
-		impl $struct_name {
+        impl $struct_name {
             $(
 	        // creates a get method for each of the fields in the SourceAttributes, FeatureAttributes and SequenceAttributes
 	        paste! {
-                  pub fn [<get_$field:snake>](&self, key: &str) -> Option<&$type> {
+                  pub fn [<get_$field>](&self, key: &str) -> Option<&$type> {
                     // Get the HashSet for the key (e.g., "source_1")
                     self.$attributes.get(key).and_then(|set| {
                         // Iterate over the HashSet to find the correct SourceAttributes value
@@ -291,7 +291,7 @@ macro_rules! create_builder {
             // function to set each of the alternative fields in the builder
             $(
 	      paste! { 
-	        pub fn [<set_$field:snake>](&mut self, value: $type) -> &mut Self {
+	        pub fn [<set_$field>](&mut self, value: $type) -> &mut Self {
 	           self.insert_to($enum_name::$field { value });
 		   self
 	           }
@@ -316,8 +316,8 @@ macro_rules! create_builder {
      };
 }
 
-//const MAX_GBK_BUFFER_SIZE: usize = 512;
-/// A Gbk reader.
+//const MAX_EMBL_BUFFER_SIZE: usize = 512;
+/// An embl reader.
 
 #[derive(Debug)]
 pub struct Records<B>
@@ -369,7 +369,7 @@ where
      }
 }
 
-pub trait GbkRead {
+pub trait EmblRead {
     fn read(&mut self, record: &mut Record) -> Result<Record, anyhow::Error>;
 }
 
@@ -381,11 +381,11 @@ pub struct Reader<B> {
 }
 
 impl Reader<io::BufReader<fs::File>> {
-    /// Read Gbk from given file path in given format.
+    /// Read EMBL from given file path in given format.
     pub fn from_file<P: AsRef<Path> + std::fmt::Debug>(path: P) -> anyhow::Result<Self> {
         fs::File::open(&path)
             .map(Reader::new)
-            .with_context(|| format!("Failed to read Gbk from {:#?}", path))
+            .with_context(|| format!("Failed to read EMBL from {:#?}", path))
     }
 }
 
@@ -393,7 +393,7 @@ impl<R> Reader<io::BufReader<R>>
 where
      R: io::Read,
 {
-    //// Create a new Gbk reader given an instance of `io::Read` in given format
+    //// Create a new EMBL reader given an instance of `io::Read` in given format
     pub fn new(reader: R) -> Self {
         Reader {
             reader: io::BufReader::new(reader),
@@ -456,18 +456,23 @@ where
 	'outer: while !self.line_buffer.is_empty() {
 	    //println!("is line buffer {:?}", &self.line_buffer);
 	    //collect the header fields
-	    if self.line_buffer.starts_with("LOCUS") {
+	    if self.line_buffer.starts_with("ID") {
 			record.rec_clear();
-	            	let mut header_fields: Vec<&str> = self.line_buffer.split_whitespace().collect();
+	            	let mut header_fields: Vec<&str> = self.line_buffer.split(";").collect();
 	                let mut header_iter = header_fields.iter();
-	                header_iter.next();
-	                record.id = header_iter.next().map(|s| s.to_string()).unwrap();
+	                let id = header_iter.next().map(|s| s.to_string()).unwrap();
+			let mut rid: Vec<&str> = id.split_whitespace().collect();
+	                record.id = rid[1].trim().to_string();
+			for _i in 0..5 {
+			     header_iter.next();
+			     }
 	                let lens = header_iter.next().map(|s| s.to_string()).unwrap();
-	                record.length = lens.trim().parse::<u32>().unwrap();
+			let ll: Vec<&str> = lens.split_whitespace().collect();
+	                record.length = ll[0].trim().parse::<u32>().unwrap();
 			self.line_buffer.clear();
 			}
 	    //collect the source fields and populate the source_map and source_attributes
-	    if self.line_buffer.starts_with("     source") {
+	    if self.line_buffer.starts_with("FT   source") {
 	        let re = Regex::new(r"([0-9]+)[[:punct:]]+([0-9]+)").unwrap();
 		let location = re.captures(&self.line_buffer).unwrap();
 		let start = &location[1];
@@ -522,7 +527,7 @@ where
 		    }
 		}
 	    //populate the FeatureAttributes and the coding sequence annotation
-	    if self.line_buffer.starts_with("     CDS") {
+	    if self.line_buffer.starts_with("FT   CDS") {
 	        let mut startiter: Vec<_> = Vec::new();
 		let mut enditer: Vec<_> = Vec::new();
 		let mut thestart: u32 = 0;
@@ -539,6 +544,7 @@ where
 		   startiter.push(thestart);
 		   enditer.push(theend);
 		   }
+		thestart -= 1;
 		let mut gene = String::new();
 		let mut product = String::new();
 		let strand: i8 = if self.line_buffer.contains("complement") {-1} else {1};
@@ -569,7 +575,7 @@ where
 			    product = substitute_odd_punctuation(prod[1].to_string());
 			    //println!("designated product {:?} {:?}", &product, &locus_tag);
 			    }
-			if self.line_buffer.starts_with("     CDS") || self.line_buffer.starts_with("ORIGIN") || self.line_buffer.starts_with("     gene") || self.line_buffer.starts_with("     misc_feature") {
+			if self.line_buffer.starts_with("FT   CDS") || self.line_buffer.starts_with("SQ") || self.line_buffer.starts_with("FT   intron") || self.line_buffer.starts_with("FT   misc_feature") || self.line_buffer.starts_with("FT   repeat_region") {
 			    if locus_tag.is_empty() {
 			         locus_tag = format!("CDS_{}",cds_counter).to_string();
 				 }
@@ -603,7 +609,7 @@ where
 			}
 	     }     }
 	    //check if we have reached the DNA sequence section and populate the record sequences field if so.  Returns the record on finding end of record mark
-	    if self.line_buffer.starts_with("ORIGIN") {
+	    if self.line_buffer.starts_with("SQ") {
 	        let mut sequences = String::new();
 	        let result_seq = loop {  
 		     self.line_buffer.clear();
@@ -611,8 +617,8 @@ where
                      if self.line_buffer.starts_with("//") {
 		         break sequences;
                      } else {
-	                 let s: Vec<&str> = self.line_buffer.split_whitespace().collect();
-		         let s = &s[1..];
+	                 let mut s: Vec<&str> = self.line_buffer.split_whitespace().collect();
+			 s.pop();
 		         let sequence = s.iter().join("");
 		         sequences.push_str(&sequence);
                          }     
@@ -625,20 +631,20 @@ where
 	              for value in val {
 		          //println!("this is key {:?} value {:?}", &key, &value);
 	                  match value {
-		               FeatureAttributes::Start { value } => a = match value {
+		               FeatureAttributes::start { value } => a = match value {
 		                   RangeValue::Exact(v) => Some(*v),
                                    RangeValue::LessThan(v) => Some(*v), // Assign the value even if it's <value
                                    RangeValue::GreaterThan(v) => Some(*v), //Assign the value even it's > value
                                    },
-		               FeatureAttributes::Stop { value } => b = match value {
+		               FeatureAttributes::stop { value } => b = match value {
 		                   RangeValue::Exact(v) => Some(*v),
                                    RangeValue::LessThan(v) => Some(*v), // Assign the value even if it's <value
                                    RangeValue::GreaterThan(v) => Some(*v), //Assign the value even if it's > value
                                    },
-		               FeatureAttributes::Strand { value } => c = match value {
+		               FeatureAttributes::strand { value } => c = match value {
 		                  value => Some(*value),
 			          },
-		               FeatureAttributes::CodonStart { value } => d = match value {
+		               FeatureAttributes::codon_start { value } => d = match value {
 		                  value => Some(value.clone()),
 			          },
 		               _ => (),
@@ -731,14 +737,14 @@ impl RangeValue {
 ///stores the details of the source features in genbank (contigs)
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SourceAttributes {
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Organism { value: String },
-    MolType { value: String},
-    Strain { value: String},
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    organism { value: String },
+    mol_type { value: String},
+    strain { value: String},
     CultureCollection { value: String},
-    TypeMaterial { value: String},
-    DbXref { value:String}
+    type_material { value: String},
+    db_xref { value:String}
 }
 
 ///macro for creating the getters
@@ -746,14 +752,14 @@ create_getters!(
     SourceAttributeBuilder,
     source_attributes,
     SourceAttributes,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Organism { value: String },
-    MolType { value: String},
-    Strain { value: String},
-    // CultureCollection { value: String},
-    TypeMaterial { value: String},
-    DbXref { value:String}
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    organism { value: String},
+    mol_type { value: String},
+    strain { value: String},
+  //  CultureCollection { value: String},
+    type_material { value: String},
+    db_xref { value: String}
 );
 
 ///builder for the source information on a per record basis
@@ -763,56 +769,31 @@ pub struct SourceAttributeBuilder {
     source_name: Option<String>,
 }
 
-impl SourceAttributeBuilder {
-    // Method to set source name
-    pub fn set_source_name(&mut self, name: String) {
-        self.source_name = Some(name);
-    }
-
-    // Method to get source name
-    pub fn get_source_name(&self) -> Option<&String> {
-        self.source_name.as_ref()
-    }
-
-    // Method to add source attributes
-    pub fn add_source_attribute(&mut self, key: String, attribute: SourceAttributes) {
-        self.source_attributes
-            .entry(key)
-            .or_insert_with(HashSet::new)
-            .insert(attribute);
-    }
-
-    // Method to retrieve source attributes for a given key
-    pub fn get_source_attributes(&self, key: &str) -> Option<&HashSet<SourceAttributes>> {
-        self.source_attributes.get(key)
-    }
-}
-
 
 create_builder!(
     SourceAttributeBuilder,
     source_attributes,
     SourceAttributes,
     source_name,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Organism { value: String },
-    MolType { value: String},
-    Strain { value: String},
-    // CultureCollection { value: String},
-    TypeMaterial { value: String},
-    DbXref { value:String}
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    organism { value: String},
+    mol_type { value: String},
+    strain { value: String},
+  //  CultureCollection { value: String},
+    type_material { value: String},
+    db_xref { value: String}
 );
 
 ///attributes for each feature, cds or gene
 #[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub enum FeatureAttributes {
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Gene { value: String },
-    Product { value: String },
-    CodonStart { value: u8 },
-    Strand { value: i8 },
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    gene { value: String },
+    product { value: String },
+    codon_start { value: u8 },
+    strand { value: i8 },
  //   ec_number { value: String }
 }
 
@@ -821,12 +802,12 @@ create_getters!(
     FeatureAttributeBuilder,
     attributes,
     FeatureAttributes,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Gene { value: String },
-    Product { value: String },
-    CodonStart { value: u8 },
-    Strand { value: i8 }
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    gene { value: String },
+    product { value: String },
+    codon_start { value: u8 },
+    strand { value: i8 }
 );
 
 ///builder for the feature information on a per coding sequence (CDS) basis
@@ -841,35 +822,35 @@ create_builder!(
     attributes,
     FeatureAttributes,
     locus_tag,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    Gene { value: String },
-    Product { value: String },
-    CodonStart { value: u8 },
-    Strand { value: i8 }
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    gene { value: String },
+    product { value: String },
+    codon_start { value: u8 },
+    strand { value: i8 }
 );
 
 ///stores the sequences of the coding sequences (genes) and proteins. Also stores start, stop, codon_start and strand information
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SequenceAttributes {
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    SequenceFfn { value: String },
-    SequenceFaa { value: String },
-    CodonStart { value: u8 },
-    Strand { value: i8 },
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    sequence_ffn { value: String },
+    sequence_faa { value: String },
+    codon_start { value: u8 },
+    strand { value: i8 },
 }
 
 create_getters!(
     SequenceAttributeBuilder,
     seq_attributes,
     SequenceAttributes,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    SequenceFfn { value: String},
-    SequenceFaa { value: String},
-    CodonStart { value: u8},
-    Strand { value: i8}
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    sequence_ffn { value: String},
+    sequence_faa { value: String},
+    codon_start { value: u8},
+    strand { value: i8}
 );
 
 ///builder for the sequence information on a per coding sequence (CDS) basis
@@ -884,12 +865,12 @@ create_builder!(
     seq_attributes,
     SequenceAttributes,
     locus_tag,
-    Start { value: RangeValue },
-    Stop { value: RangeValue },
-    SequenceFfn { value: String},
-    SequenceFaa { value: String},
-    CodonStart { value: u8 },
-    Strand { value: i8 }
+    start { value: RangeValue },
+    stop { value: RangeValue },
+    sequence_ffn { value: String},
+    sequence_faa { value: String},
+    codon_start { value: u8 },
+    strand { value: i8 }
 );
 
 ///product lines can contain difficult to parse punctuation such as biochemical symbols like unclosed single quotes, superscripts, single and double brackets etc.

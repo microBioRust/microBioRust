@@ -1,7 +1,5 @@
 use microBioRust::gbk;
 use std::fs::File;
-use std::env;
-use std::process;
 use clap::Parser;
 
 #[derive(Parser,Default,Debug)]
