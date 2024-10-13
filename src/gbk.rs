@@ -1509,7 +1509,7 @@ mod tests {
 	         .set_mol_type("DNA".to_string())
 	         .set_strain("K-12 substr. MG1655".to_string())
 	         // culture_collection.clone()
-		 .set_type_material("".to_string())
+		 .set_type_material("type strain of Escherichia coli K12".to_string())
 	         .set_db_xref("PRJNA57779".to_string());
 	    record.cds
                   .set_counter("b3304".to_string())
