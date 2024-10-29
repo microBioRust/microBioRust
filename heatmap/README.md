@@ -5,6 +5,7 @@ At the moment the heatmap data is coded into the Rust lib.rs, so it is currently
 and a rusty colour scheme
 
 To install, you can build with wasm-pack 📦✨ 
+
 ``wasm-pack build --target web``
 
 And serve it locally, for example with:
