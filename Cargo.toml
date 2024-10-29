@@ -3,6 +3,7 @@ members = [
    "microSeqIO",
    "heatmap"
 ]
+resolver = "2"
 
 [profile.dev]
 opt-level = 0

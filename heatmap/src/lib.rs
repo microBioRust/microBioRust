@@ -256,6 +256,6 @@ pub fn start() -> Result<(), JsValue> {
     
     window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref()).unwrap();
     closure.forget();
-    //let result = serde_wasm_bindgen::to_value(&heatmap_data).expect("issue with converting the heatmap data to js value");
+
     Ok(())
 }
