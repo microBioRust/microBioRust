@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT"
 keywords = ["bioinformatics","micro","bio","genomics","sequence-analysis"]
 description = "Microbiology friendly bioinformatics Rust functions"
-categories = ["science::bioinformatics::sequence-analysis", "science::bioinformatics::genomics", "science::bioinformatics","visualization","data-structures"]
+categories = ["science::bioinformatics::sequence-analysis", "science::bioinformatics::genomics", "science::bioinformatics","science","data-structures"]
 readme = "README.md"
 exclude = [".git",".gitignore"]
 repository = "https://github.com/LCrossman/microBioRust"
@@ -14,14 +14,13 @@ repository = "https://github.com/LCrossman/microBioRust"
 [lints.rust]
 unsafe_code = "forbid"
 
-[workspace]
-members = [
-   "microSeqIO",
-   "heatmap"
-]
-
-[profile.dev]
-opt-level = 0
-
-[profile.release]
-opt-level = 3
+[dependencies]
+paste = "1.0"
+itertools="0.10.1"
+protein-translate="0.2.0"
+bio="0.37.1"
+anyhow="1.0"
+thiserror="1.0"
+regex="1.5"
+chrono = "0.4.38"
+clap = { version = "4.5.19", features = ["derive"] }

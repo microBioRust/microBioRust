@@ -14,7 +14,9 @@ Questions and comments - please join the Discord server :) [here](https://discor
 Currently there is functionality for:<br>
 
  # A Genbank to GFF parser
+ # A Heatmap plot with wasm and d3.js
 
+To use a specific workspace (at the moment microseqio or heatmap) clone the project, cd into the specific directory required and build the project from there
 
 
  You are able to parse genbank and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
