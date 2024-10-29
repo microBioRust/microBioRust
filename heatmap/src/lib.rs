@@ -17,7 +17,6 @@ use web_sys::{window, Document, HtmlCanvasElement, CanvasRenderingContext2d};
 use web_sys::console;
 use std::rc::Rc;
 use std::cell::RefCell;
-use wee_alloc;
 
 
 pub fn draw_responsive_heatmap(
