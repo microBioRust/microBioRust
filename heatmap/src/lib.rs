@@ -19,8 +19,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use wee_alloc;
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub fn draw_responsive_heatmap(
     context: &CanvasRenderingContext2d,
