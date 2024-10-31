@@ -2,20 +2,6 @@
 ## A Rust bioinformatics crate aimed at Microbial genomics<br>
 The aim of this crate is to provide Microbiology friendly Rust functions for bioinformatics.<br>
 
-Very much under construction!<br>
-
-Some concepts with many thanks to Rust-bio<br>
-
-To install Rust - please see here [Rust install](https://www.rust-lang.org/tools/install) or with Conda<br>
-If you would like to contribute please follow the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct)
-
-Questions and comments - please join the Discord server :) [here](https://discord.gg/xP2ngwTttz)
-
-Currently there is functionality for:<br>
-
- # 1. A Genbank to GFF parser
- # 2. A Heatmap plot with wasm and d3.js
-
 To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
 
 In microSeqIO:
