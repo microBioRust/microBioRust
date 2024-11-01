@@ -1,0 +1,28 @@
+name: microSeqIO_test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --verbose
+    - name: Run test three
+      run: cargo test --verbose create_new_record
+    -name: Run tests one and two
+      env: 
+       FILENAME: "test_output.gbk"
+      run: | 
+       cargo test --verbose genbank_to_faa
+       cargo test --verbose genbank_to_ffn
