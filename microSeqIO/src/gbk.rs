@@ -1398,7 +1398,7 @@ mod tests {
 	                 break; },
 	        }
            }
-        let output_file = format!("{}.gff", &filename);
+        let output_file = format!("test_output.gff");
         gff_write(seq_region.clone(), record_vec, &output_file, true)?;
         println!("Total records processed: {}", read_counter);
         return Ok(());
