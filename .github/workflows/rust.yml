@@ -22,7 +22,7 @@ jobs:
       run: cargo test --verbose create_new_record
     - name: Run tests one and two
       env:
-        FILENAME: "test_output.gbk"
+        FILENAME: microSeqIO/test_output.gbk
       run: | 
        cargo test --verbose genbank_to_faa
        cargo test --verbose genbank_to_ffn
