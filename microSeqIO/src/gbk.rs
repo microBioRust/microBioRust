@@ -1361,12 +1361,7 @@ mod tests {
     use super::*;
     #[test]
     pub fn genbank_to_gff() -> io::Result<()> {
-        let args: Vec<String> = env::args().collect();
-        let config = Config::new(&args).unwrap_or_else(|err| {
-            println!("Problem with parsing file arguments: {}", err);
-	    process::exit(1);
-	    });
-        let file_gbk = fs::File::open(&config.filename)?;
+        let file_gbk = fs::File::open("test_output.gbk")?;
         let prev_start: u32 = 0;
         let mut prev_end: u32 = 0;
         let mut reader = Reader::new(file_gbk);
@@ -1411,12 +1406,7 @@ mod tests {
     
     #[test]
     pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
-            let args: Vec<String> = env::args().collect();
-            let config = Config::new(&args).unwrap_or_else(|err| {
-                println!("Problem with parsing file arguments: {}", err);
-	        process::exit(1);
-	        });
-            let file_gbk = fs::File::open(config.filename)?;
+            let file_gbk = fs::File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
             let mut records = reader.records();
             let mut read_counter: u32 = 0;
