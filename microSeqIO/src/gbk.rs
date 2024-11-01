@@ -23,13 +23,21 @@
 //!
 //!
 //!```rust
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust_microSeqIO::gbk::Reader;
+//! use std::io;
+//!
+//! #[derive(Parser, Debug)]
+//! #[clap(author, version, about)]
+//! struct Arguments {
+//! #[clap(short, long)]
+//! filename: String,
+//! }
+//!
 //! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
-//!             let args: Vec<String> = env::args().collect();
-//!             let config = Config::new(&args).unwrap_or_else(|err| {
-//!                println!("Problem with parsing file arguments: {}", err);
-//!	           process::exit(1);
-//!	           });
-//!            let file_gbk = fs::File::open(config.filename)?;
+//!            let args = Arguments::parse();
+//!            let file_gbk = File::open(args.filename)?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
 //!            loop {
@@ -58,13 +66,24 @@
 //!
 //!
 //! ```rust
+//!    use microBioRust_microSeqIO::gbk::gff_write;
+//!    use microBioRust_microSeqIO::gbk::Reader;
+//!    use microBioRust_microSeqIO::gbk::Record;
+//!    use std::collections::BTreeMap;
+//!    use std::fs::File;
+//!    use clap::Parser;
+//!    use std::io;
+//!
+//!   #[derive(Parser, Debug)]
+//!   #[clap(author, version, about)]
+//!   struct Arguments {
+//!   #[clap(short, long)]
+//!   filename: String,
+//!   }
+//!
 //!    pub fn genbank_to_gff() -> io::Result<()> {
-//!        let args: Vec<String> = env::args().collect();
-//!        let config = Config::new(&args).unwrap_or_else(|err| {
-//!            println!("Problem with parsing file arguments: {}", err);
-//!	       process::exit(1);
-//!	       });
-//!        let file_gbk = fs::File::open(&config.filename)?;
+//!        let args = Arguments::parse();
+//!        let file_gbk = File::open(&args.filename)?;
 //!        let prev_start: u32 = 0;
 //!        let mut prev_end: u32 = 0;
 //!        let mut reader = Reader::new(file_gbk);
@@ -101,10 +120,11 @@
 //!	                     break; },
 //!	            }
 //!            }
-//!        let output_file = format!("{}.gff", &config.filename);
+//!        let output_file = format!("{}.gff", &args.filename);
 //!        gff_write(seq_region.clone(), record_vec, &output_file, true);
 //!        println!("Total records processed: {}", read_counter);
 //!        return Ok(());
+//!    }
 //!```
 //! Example to create a completely new record, use of setters or set_ functionality
 //!
@@ -120,8 +140,12 @@
 //! To write into genbank format requires gbk_write(seq_region, record_vec, filename), no true or false since genbank format will include the DNA sequence
 //!
 //!
-//!
 //! ```rust
+//!    use microBioRust_microSeqIO::gbk::gff_write;
+//!    use microBioRust_microSeqIO::gbk::RangeValue;
+//!    use microBioRust_microSeqIO::gbk::Record;
+//!    use std::collections::BTreeMap;
+//!
 //!     pub fn create_new_record() -> Result<(), anyhow::Error> {
 //!         let filename = format!("new_record.gff");
 //!	    let mut record = Record::new();
@@ -645,7 +669,7 @@ where
 		               }
 	                 }
 	                 let sta = a.map(|o| o as usize).ok_or_else(|| { println!("No value for start") }).unwrap();
-	                 let sto = b.map(|t| t as usize).ok_or_else(|| { println!("No value for stop") }).unwrap();
+	                 let sto = b.map(|t| t as usize).ok_or_else(|| { println!("No value for stop") }).unwrap() - 1;
 	                 let stra = c.map(|u| u as i8).ok_or_else(|| { println!("No value for strand") }).unwrap();
 	                 let cod = d.map(|v| v as usize - 1).ok_or_else(|| { println!("No value for strand") }).unwrap();
 	                 let star = sta.try_into().unwrap();
@@ -760,7 +784,7 @@ create_getters!(
 #[derive(Debug, Default, Clone)]
 pub struct SourceAttributeBuilder {
     pub source_attributes: BTreeMap<String, HashSet<SourceAttributes>>,
-    source_name: Option<String>,
+    pub source_name: Option<String>,
 }
 
 impl SourceAttributeBuilder {
@@ -1359,6 +1383,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
     #[test]
     pub fn genbank_to_gff() -> io::Result<()> {
         let file_gbk = fs::File::open("test_output.gbk")?;
@@ -1403,7 +1428,6 @@ mod tests {
         println!("Total records processed: {}", read_counter);
         return Ok(());
     }
-    
     #[test]
     pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
             let file_gbk = fs::File::open("test_output.gbk")?;
@@ -1560,7 +1584,7 @@ TGCGTAACCATCACGCGGACCGAAGGTCAGGGTATTATCTGCATGTTTAACTTCAACAGC
 ATCGTTGAGAGTACGAGTCAGCTCGCCGTTTTTACCTTTGATCGTAATAACCTGACCGTT
 GATTTTTACGTCAACGCCGGCAGGAACAACGACCGGTGCTTTAGCAACACGAGACA".to_string();
            gff_write(seq_region.clone(), vec![record.clone()], "test_output.gff", true)?;
-	   gbk_write(seq_region, vec![record], "test_output.gbk")?;
+	   gbk_write(seq_region, vec![record], "new_output.gbk")?;
 	   return Ok(());
       }
 }

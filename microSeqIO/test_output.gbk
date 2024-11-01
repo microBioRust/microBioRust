@@ -15,7 +15,7 @@ FEATURES             Location/Qualifiers
                      /locus_tag="b3304"
      CDS             complement(1..354)
                      /locus_tag="b3304"
-                     /codon_start="1"
+                     /codon_start=1
                      /gene="rplR"
                      /translation="MDKKSARIRRATRARRKLQELGATRLVVHRTPRHIYAQVIAPNGS
                      LVAASTVEKAIAEQLKYTGNKDAAAAVGKAVAERALEKGIKDVSFDRSGFQYHGRVQAL
@@ -25,7 +25,7 @@ FEATURES             Location/Qualifiers
                      /locus_tag="b3305"
      CDS             complement(364..897)
                      /locus_tag="b3305"
-                     /codon_start="1"
+                     /codon_start=1
                      /gene="rplF"
                      /translation="MSRVAKAPVVVPAGVDVKINGQVITIKGKNGELTRTLNDAVEVKH
                      NTLTFGPRDGYADGWAQAGTARALLNSMVIGVTEGFTKKLQLVGVGYRAAVKGNVINLS
@@ -48,5 +48,4 @@ ORIGIN
   721 TGCGTAACCA TCACGCGGAC CGAAGGTCAG GGTATTATCT GCATGTTTAA CTTCAACAGC
   781 ATCGTTGAGA GTACGAGTCA GCTCGCCGTT TTTACCTTTG ATCGTAATAA CCTGACCGTT
   841 GATTTTTACG TCAACGCCGG CAGGAACAAC GACCGGTGCT TTAGCAACAC GAGACA
-
 //
