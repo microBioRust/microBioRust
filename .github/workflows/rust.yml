@@ -18,11 +18,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: cargo build --verbose
-    - name: Run test three
-      run: cargo test --verbose create_new_record
-    - name: Run tests one and two
-      env:
-        FILENAME: microSeqIO/test_output.gbk
-      run: | 
-       cargo test --verbose genbank_to_faa
-       cargo test --verbose genbank_to_ffn
+    - name: Run tests one-three
+      run: 
+        cargo test --verbose create_new_record
+        cargo test --verbose genbank_to_faa
+        cargo test --verbose genbank_to_ffn
