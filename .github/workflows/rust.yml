@@ -17,9 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
     - name: Run tests one-three
-      run: 
-        cargo test --verbose create_new_record
-        cargo test --verbose genbank_to_faa
-        cargo test --verbose genbank_to_ffn
+      run: cargo test --verbose
