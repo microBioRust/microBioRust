@@ -680,13 +680,13 @@ where
 	                 if stra == -1 {
 	                    if cod > 1 {
 			       //println!("reverse strand coding start more than one {:?}", &iterablecount);
-		               sliced_sequence = &record.sequence[sta+cod..sto];
+		               sliced_sequence = &record.sequence[sta+cod+1..sto];
 		               }
 		            else {
 			       //println!("record sta {:?} sto {:?} cod {:?} stra {:?} record.seq length {:?}", &sta, &sto, &cod, &stra, &record.sequence.len());
 			       //println!("sliced sta {:?} sliced sto {:?} record.id {:?}", sta, sto, &record.id);
 			       //println!("iterable count is {:?} reverse strand codon start one", &iterablecount);
-	                       sliced_sequence = &record.sequence[sta..sto];
+	                       sliced_sequence = &record.sequence[sta..sto+1];
 			       //println!("iterable count after is {:?}", &iterablecount);
 		               }
 	                 let cds_char = sliced_sequence;

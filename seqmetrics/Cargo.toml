@@ -1,0 +1,9 @@
+[package]
+name = "seqmetrics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+microBioRust-microSeqIO = { path = "../microSeqIO" }
+anyhow = "1.0.93"
+clap = "4.5.20"
