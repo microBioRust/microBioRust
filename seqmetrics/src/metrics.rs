@@ -147,7 +147,7 @@ mod tests {
 
    #[test]
    pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
-            let file_gbk = File::open("../../Pseudomonas_aeruginosa.gbff")?;
+            let file_gbk = File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
             let mut records = reader.records();
 	    let mut counts: HashMap<char, u64> = HashMap::new();
