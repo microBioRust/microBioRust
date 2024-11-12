@@ -157,9 +157,10 @@ mod tests {
                     Some(Ok(mut record)) => {
                        //println!("next record");
                        //println!("Record id: {:?}", record.id);
-                       for (k, _v) in &record.cds.attributes {
+                       for (k, v) in &record.cds.attributes {
                            match record.seq_features.get_sequence_faa(&k) {
                                      Some(value) => { let seq_faa = value.to_string();
+				                      println!("k is {:?} v is {:?} seq faa is {:?}", &k, &v, &seq_faa);
 				                      molecular_weight_total = molecular_weight(&seq_faa);
                                                       println!(">{}|{}\n{}", &record.id, &k, molecular_weight_total);
                                                       },
