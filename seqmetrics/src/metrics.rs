@@ -13,10 +13,14 @@ struct Arguments {
 
 
 // Define a macro to generate the getters for each amino acid
-macro_rules! molweight_amino_acid_getters {
+macro_rules! amino_acid_getters {
     ($struct_name:ident, $( ($field:ident, $full_name:ident, $three_letter:ident, $single_letter:ident) ),* ) => {
         impl $struct_name {
             $(
+	        // Capital full name getter
+		fn $field(&self) -> f64 {
+		   self.$field
+		}
                 // Full name getter
                 fn $full_name(&self) -> f64 {
                     self.$field
@@ -34,7 +38,7 @@ macro_rules! molweight_amino_acid_getters {
     };
 }
 
-struct MolWeights {
+pub struct MolWeights {
     Alanine: f64,
     Arginine: f64,
     Asparagine: f64,
@@ -87,7 +91,7 @@ impl MolWeights {
 
 pub fn molecular_weight(protein_seq: &str) -> f64 {
     let amino_weights: MolWeights = MolWeights::new();
-    molweight_amino_acid_getters!(MolWeights,
+    amino_acid_getters!(MolWeights,
              (Alanine, alanine, Ala, A),
              (Arginine, arginine, Arg, R),
              (Asparagine, asparagine, Asn, N),
@@ -140,17 +144,170 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
 }
 
 
+pub struct Hydrophobicity {
+    Alanine: f64,
+    Arginine: f64,
+    Asparagine: f64,
+    Aspartate: f64,
+    Cysteine: f64,
+    Glutamate: f64,
+    Glutamine: f64,
+    Glycine: f64,
+    Histidine: f64,
+    Isoleucine: f64,
+    Leucine: f64,
+    Lysine: f64,
+    Methionine: f64,
+    Phenylalanine: f64,
+    Proline: f64,
+    Serine: f64,
+    Threonine: f64,
+    Tryptophan: f64,
+    Tyrosine: f64,
+    Valine: f64,
+}
+
+impl Hydrophobicity {
+    fn new_KD() -> Self {
+       Self {
+              //Kyte-Doolittle values from the Qiagen resources website
+              Alanine: 1.80, 
+              Arginine: -4.50, 
+              Asparagine: -3.50, 
+              Aspartate: -3.50, 
+              Cysteine: 2.50, 
+              Glutamate: -3.50, 
+              Glutamine: -3.50, 
+              Glycine: -0.40, 
+              Histidine: -3.20, 
+              Isoleucine: 4.50, 
+	      Leucine: 3.80, 
+              Lysine: -3.90, 
+              Methionine: 1.90, 
+              Phenylalanine: 2.80, 
+              Proline: -1.60, 
+              Serine: -0.80, 
+              Threonine: -0.70,
+              Tryptophan: -0.90, 
+              Tyrosine: -1.30, 
+              Valine: 4.20, 
+             }
+      }
+}
+
+pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
+    let mut hydrophobicity: Hydrophobicity = Hydrophobicity::new_KD();
+    let mut total_hydrophobicity: Vec<f64> = Vec::new();
+    let mut window_values: f64 = 0.0;
+    amino_acid_getters!(Hydrophobicity,
+             (Alanine, alanine, Ala, A),
+             (Arginine, arginine, Arg, R),
+             (Asparagine, asparagine, Asn, N),
+             (Aspartate, aspartate, Asp, D),
+             (Cysteine, cysteine, Cys, C),
+             (Glutamine, glutamine, Gln, Q),
+             (Glutamate, glutamate, Glu, E),
+             (Glycine, glycine, Gly, G),
+             (Histidine, histidine, His, H),
+             (Isoleucine, isoleucine, Ile, I),
+             (Leucine, leucine, Leu, L),
+             (Lysine, lysine, Lys, K),
+             (Methionine, methionine, Met, M),
+             (Phenylalanine, phenylalanine, Phe, F),
+             (Proline, proline, Pro, P),
+             (Serine, serine, Ser, S),
+             (Threonine, threonine, Thr, T),
+             (Tryptophan, trytophan, Trp, W),
+             (Tyrosine, tyrosine, Tyr, Y),
+             (Valine, valine, Val, V)
+             );
+    let mut windows: Vec<String> = protein_seq
+           .chars()
+	   .collect::<Vec<_>>()
+	   .windows(window_size)
+	   .map(|window| window.iter().collect())
+	   .collect();
+    for (index, window) in windows.iter().enumerate() {
+       for ch in window.chars() {
+           match ch {
+               'A' => window_values += hydrophobicity.A(),
+	       'R' => window_values += hydrophobicity.R(),
+	       'N' => window_values += hydrophobicity.N(),
+	       'D' => window_values += hydrophobicity.D(),
+	       'C' => window_values += hydrophobicity.C(),
+	       'Q' => window_values += hydrophobicity.Q(),
+	       'E' => window_values += hydrophobicity.E(),
+	       'G' => window_values += hydrophobicity.G(),
+	       'H' => window_values += hydrophobicity.H(),
+	       'I' => window_values += hydrophobicity.I(),
+	       'L' => window_values += hydrophobicity.L(),
+	       'K' => window_values += hydrophobicity.K(),
+	       'M' => window_values += hydrophobicity.M(),
+	       'F' => window_values += hydrophobicity.F(),
+	       'P' => window_values += hydrophobicity.P(),
+	       'S' => window_values += hydrophobicity.S(),
+	       'T' => window_values += hydrophobicity.T(),
+	       'W' => window_values += hydrophobicity.W(),
+	       'Y' => window_values += hydrophobicity.Y(),
+	       'V' => window_values += hydrophobicity.V(),
+	        _ => continue,
+	        }
+          }
+         total_hydrophobicity.push(window_values);
+      }
+   total_hydrophobicity
+}
+
+
     
 #[cfg(test)]
 mod tests {
     use super::*;
 
    #[test]
+   pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
+            let file_gbk = File::open("test_output.gbk")?;
+            let mut reader = Reader::new(file_gbk);
+            let mut records = reader.records();
+            loop {  
+                match records.next() {  
+                    Some(Ok(mut record)) => {
+                       //println!("next record");
+                       //println!("Record id: {:?}", record.id);
+                       for (k, v) in &record.cds.attributes {
+                           match record.seq_features.get_sequence_faa(&k) {
+                                     Some(value) => { let seq_faa = value.to_string();
+				                      println!("k is {:?} v is {:?} seq faa is {:?}", &k, &v, &seq_faa);
+				                      let hydro_values = hydrophobicity(&seq_faa, 21);
+						      let mut result = String::new();
+						      for hydro in hydro_values {
+						           if hydro > 1.6 {
+						               println!("possible transmembrane region - score {}",&hydro);  
+							       }
+						           else {
+						               ()
+							   }
+						      }
+                                                  },
+                                     _ => (),
+                                     };
+                       
+                           }
+                    },
+                    Some(Err(e)) => { println!("theres an err {:?}", e); },
+                    None => {
+                       println!("finished iteration");
+                             break; },
+                    }
+               }
+            return Ok(());
+   }
+   
+   #[test]
    pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
             let file_gbk = File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
             let mut records = reader.records();
-	    let mut counts: HashMap<char, u64> = HashMap::new();
 	    let mut molecular_weight_total: f64 = 0.0;
             loop {  
                 match records.next() {  
