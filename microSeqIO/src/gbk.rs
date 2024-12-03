@@ -594,7 +594,7 @@ where
 			    }
 			if self.line_buffer.contains("/product") {
 		            let prod: Vec<&str> = self.line_buffer.split('\"').collect();
-			    product = substitute_odd_punctuation(prod[1].to_string());
+			    product = substitute_odd_punctuation(prod[1].to_string())?;
 			    //println!("designated product {:?} {:?}", &product, &locus_tag);
 			    }
 			if self.line_buffer.starts_with("     CDS") || self.line_buffer.starts_with("ORIGIN") || self.line_buffer.starts_with("     gene") || self.line_buffer.starts_with("     misc_feature") {
@@ -937,13 +937,13 @@ create_builder!(
 
 ///product lines can contain difficult to parse punctuation such as biochemical symbols like unclosed single quotes, superscripts, single and double brackets etc.
 ///here we substitute these for an underscore
-pub fn substitute_odd_punctuation(input: String) -> String {
-    let re = Regex::new(r"[/?()',`]|[α-ωΑ-Ω]").unwrap();
-    let suf = &input
-        .strip_suffix("\r\n")
-        .or(input.strip_suffix("\n"))
-        .unwrap_or(&input);
-    re.replace_all(suf, "_").to_string()
+pub fn substitute_odd_punctuation(input: String) -> Result<String, anyhow::Error> {
+    let re = Regex::new(r"[/?()',`]|[α-ωΑ-Ω]")?;
+
+	// Strip either \r\n or \n more elegantly
+	let cleaned = input.trim_end_matches(&['\r', '\n'][..]);
+
+	Ok(re.replace_all(cleaned, "_").to_string())
 }
 
 ///GFF3 field9 construct
