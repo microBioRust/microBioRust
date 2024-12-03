@@ -456,7 +456,7 @@ where
 	//initialise variables
 	let mut sequences = String::new();
 	let mut source_map = SourceAttributeBuilder::new();
-        let mut cds = FeatureAttributeBuilder::new(); 
+        let mut cds = FeatureAttributeBuilder::new();
         let mut seq_features = SequenceAttributeBuilder::new();
 	let mut cds_counter: i32 = 0;
 	let mut source_counter: i32 = 0;
@@ -485,22 +485,26 @@ where
 	            	let mut header_fields: Vec<&str> = self.line_buffer.split_whitespace().collect();
 	                let mut header_iter = header_fields.iter();
 	                header_iter.next();
-	                record.id = header_iter.next().map(|s| s.to_string()).unwrap();
-	                let lens = header_iter.next().map(|s| s.to_string()).unwrap();
-	                record.length = lens.trim().parse::<u32>().unwrap();
+	                record.id = header_iter.next()
+						.ok_or_else(|| anyhow::anyhow!("missing record id"))? // Get &str or error
+						.to_string();
+	                let lens = header_iter.next()
+						.ok_or_else(|| anyhow::anyhow!("missing record length"))? // Get &str or error
+						.to_string();
+	                record.length = lens.trim().parse::<u32>()?;
 			self.line_buffer.clear();
 			}
 	    //collect the source fields and populate the source_map and source_attributes
 	    if self.line_buffer.starts_with("     source") {
-	        let re = Regex::new(r"([0-9]+)[[:punct:]]+([0-9]+)").unwrap();
-		let location = re.captures(&self.line_buffer).unwrap();
+	        let re = Regex::new(r"([0-9]+)[[:punct:]]+([0-9]+)")?;
+		let location = re.captures(&self.line_buffer).ok_or_else(|| anyhow::anyhow!("missing location"))?;
 		let start = &location[1];
 		let end = &location[2];
-		thestart = start.trim().parse::<u32>().unwrap();
+		thestart = start.trim().parse::<u32>()?;
 		source_counter+=1;
 		source_name = format!("source_{}_{}",record.id,source_counter).to_string();
 		thestart += prev_end;
-		theend = end.trim().parse::<u32>().unwrap() + prev_end;
+		theend = end.trim().parse::<u32>()? + prev_end;
 		//println!("so the start and end are {:?} {:?}", &thestart, &theend);
 		loop {
 		    self.line_buffer.clear();
@@ -554,7 +558,7 @@ where
 		let mut joined: bool = false;
 	        //gather the feature coordinates
 		let joined = if self.line_buffer.contains("join") { true } else { false };
-	        let re = Regex::new(r"([0-9]+)[[:punct:]]+([0-9]+)").unwrap();
+	        let re = Regex::new(r"([0-9]+)[[:punct:]]+([0-9]+)")?;
 		//let matches: Vec<&regex::Captures> = re.captures_iter(&self.line_buffer).collect();
 		for cap in re.captures_iter(&self.line_buffer) {
 		   cds_counter+=1;
@@ -579,7 +583,7 @@ where
                             }
                         if self.line_buffer.contains("/codon_start") {
                             let codstart: Vec<&str> = self.line_buffer.split('=').collect();
-                            let valstart = codstart[1].trim().parse::<u8>().unwrap();
+                            let valstart = codstart[1].trim().parse::<u8>()?;
                             codon_start = valstart;
 			    //println!("designated codon start {:?} {:?}", &codon_start, &locus_tag);
                             }
@@ -590,7 +594,7 @@ where
 			    }
 			if self.line_buffer.contains("/product") {
 		            let prod: Vec<&str> = self.line_buffer.split('\"').collect();
-			    product = substitute_odd_punctuation(prod[1].to_string());
+			    product = substitute_odd_punctuation(prod[1].to_string())?;
 			    //println!("designated product {:?} {:?}", &product, &locus_tag);
 			    }
 			if self.line_buffer.starts_with("     CDS") || self.line_buffer.starts_with("ORIGIN") || self.line_buffer.starts_with("     gene") || self.line_buffer.starts_with("     misc_feature") {
@@ -668,13 +672,18 @@ where
 		               _ => (),
 		               }
 	                 }
-	                 let sta = a.map(|o| o as usize).ok_or_else(|| { println!("No value for start") }).unwrap();
-	                 let sto = b.map(|t| t as usize).ok_or_else(|| { println!("No value for stop") }).unwrap() - 1;
-	                 let stra = c.map(|u| u as i8).ok_or_else(|| { println!("No value for strand") }).unwrap();
-	                 let cod = d.map(|v| v as usize - 1).ok_or_else(|| { println!("No value for strand") }).unwrap();
-	                 let star = sta.try_into().unwrap();
-	                 let stow = sto.try_into().unwrap();
-	                 let codd = cod.try_into().unwrap();
+	                 let sta = a.map(|o| o as usize)
+						 .ok_or(anyhow!("No value for start"))?;
+	                 let sto = b.map(|t| t as usize)
+						 .ok_or(anyhow!("No value for stop"))? - 1;
+	                 let stra = c.map(|u| u as i8)
+						 .ok_or(anyhow!("No value for strand"))?;
+	                 let cod = d.map(|v| v as usize - 1)
+						 .ok_or(anyhow!("No value for strand"))?;
+
+	                 let star = sta.try_into()?;
+	                 let stow = sto.try_into()?;
+	                 let codd = cod.try_into()?;
 	                 let mut sliced_sequence: &str = "";
 	                 //collects the DNA sequence and translations on the correct strand
 	                 if stra == -1 {
@@ -928,13 +937,13 @@ create_builder!(
 
 ///product lines can contain difficult to parse punctuation such as biochemical symbols like unclosed single quotes, superscripts, single and double brackets etc.
 ///here we substitute these for an underscore
-pub fn substitute_odd_punctuation(input: String) -> String {
-    let re = Regex::new(r"[/?()',`]|[α-ωΑ-Ω]").unwrap();
-    let suf = &input
-        .strip_suffix("\r\n")
-        .or(input.strip_suffix("\n"))
-        .unwrap_or(&input);
-    re.replace_all(suf, "_").to_string()
+pub fn substitute_odd_punctuation(input: String) -> Result<String, anyhow::Error> {
+    let re = Regex::new(r"[/?()',`]|[α-ωΑ-Ω]")?;
+
+	// Strip either \r\n or \n more elegantly
+	let cleaned = input.trim_end_matches(&['\r', '\n'][..]);
+
+	Ok(re.replace_all(cleaned, "_").to_string())
 }
 
 ///GFF3 field9 construct
