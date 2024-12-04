@@ -38,6 +38,7 @@ macro_rules! amino_acid_getters {
     };
 }
 
+
 pub struct MolWeights {
     Alanine: f64,
     Arginine: f64,
@@ -142,7 +143,6 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
    let result_weight = total_weight - ((protein_seq.len() - 1) as f64 * 18.02);
    result_weight
 }
-
 
 pub struct Hydrophobicity {
     Alanine: f64,
@@ -259,6 +259,14 @@ pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
 }
 
 
+pub fn amino_counts(protein_seq: &str) -> HashMap<char, u64> {
+    let mut counts: HashMap<char, u64> = HashMap::new();
+    for c in protein_seq.chars() {
+       *counts.entry(c).or_insert(0) +=1;
+       }
+    counts
+}
+
     
 #[cfg(test)]
 mod tests {
@@ -277,7 +285,7 @@ mod tests {
                        for (k, v) in &record.cds.attributes {
                            match record.seq_features.get_sequence_faa(&k) {
                                      Some(value) => { let seq_faa = value.to_string();
-				                      println!("k is {:?} v is {:?} seq faa is {:?}", &k, &v, &seq_faa);
+				                      println!("{:?}", &seq_faa);
 				                      let hydro_values = hydrophobicity(&seq_faa, 21);
 						      let mut result = String::new();
 						      for hydro in hydro_values {
@@ -317,9 +325,41 @@ mod tests {
                        for (k, v) in &record.cds.attributes {
                            match record.seq_features.get_sequence_faa(&k) {
                                      Some(value) => { let seq_faa = value.to_string();
-				                      println!("k is {:?} v is {:?} seq faa is {:?}", &k, &v, &seq_faa);
+				                      println!("id: {:?}", &k);
 				                      molecular_weight_total = molecular_weight(&seq_faa);
                                                       println!(">{}|{}\n{}", &record.id, &k, molecular_weight_total);
+                                                      },
+                                     _ => (),
+                                     };
+                       
+                           }
+                    },
+                    Some(Err(e)) => { println!("theres an err {:?}", e); },
+                    None => {
+                       println!("finished iteration");
+                             break; },
+                    }
+               }
+            return Ok(());
+   }
+
+   #[test]
+   pub fn count_aminos() -> Result<(), anyhow::Error> {
+            let file_gbk = File::open("test_output.gbk")?;
+            let mut reader = Reader::new(file_gbk);
+            let mut records = reader.records();
+	    let mut results: HashMap<char, u64> = HashMap::new();
+            loop {  
+                match records.next() {  
+                    Some(Ok(mut record)) => {
+                       //println!("next record");
+                       //println!("Record id: {:?}", record.id);
+                       for (k, v) in &record.cds.attributes {
+                           match record.seq_features.get_sequence_faa(&k) {
+                                     Some(value) => { let seq_faa = value.to_string();
+				                      println!("id: {:?}", &k);
+				                      results = amino_counts(&seq_faa);
+                                                      println!(">{}|{}\n{:?}", &record.id, &k, results);
                                                       },
                                      _ => (),
                                      };
