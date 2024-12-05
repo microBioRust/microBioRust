@@ -27,7 +27,8 @@ pub fn draw_responsive_heatmap(
     canvas_width: f64,
     canvas_height: f64,
     device_pixel_ratio: f64,
-) {
+) -> Result<(), JsValue>
+{
     let rows = values.len();
     let cols = values[0].len();
     console::log_1(&JsValue::from_str(&format!("up in the draw function")));
@@ -114,7 +115,8 @@ pub fn draw_responsive_heatmap(
     for col in 0..cols {
         let x = padding_left + col as f64 * box_width + box_width / 2.0;
         let y = (box_height * rows as f64) + padding_bottom + 5.0;  // Position below the heatmap
-        context.fill_text(&x_labels[col], x, y).unwrap();
+        context.fill_text(&x_labels[col], x, y)
+            .map_err(|_| JsValue::from_str(&format!("Failed to draw text at column {}", col)))?;
 
         // Draw ticks
         context.begin_path();
@@ -130,7 +132,8 @@ pub fn draw_responsive_heatmap(
     for row in 0..rows {
         let x = padding_left - 10.0;  // Position to the left of the heatmap
         let y = padding_top + row as f64 * box_height + box_height / 2.0;
-        context.fill_text(&y_labels[row], x, y).unwrap();
+        context.fill_text(&y_labels[row], x, y)
+            .map_err(|_| JsValue::from_str(&format!("Failed to draw text at row {}", row)))?;;
 
         // Draw ticks
         context.begin_path();
@@ -143,6 +146,7 @@ pub fn draw_responsive_heatmap(
         &adj_canvas_width,
         &adj_canvas_height
          )));
+    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -172,7 +176,7 @@ pub fn start() -> Result<(), JsValue> {
     let window = window().expect("should have a window in this context");
     let window = Rc::new(window);
     let window_clone = Rc::clone(&window);
-    let document = window.document().expect("should have a document on window");
+    let document = window.document().ok_or_else(|| JsValue::from_str("no document"))?;
     console::log_1(&JsValue::from_str(&format!("up in the start of the function")));
     // Get the canvas element
     let canvas = document
@@ -212,7 +216,7 @@ pub fn start() -> Result<(), JsValue> {
 
     let context = canvas
         .get_context("2d")?
-        .unwrap()
+        .ok_or_else(|| JsValue::from_str("Context not found"))?
         .dyn_into::<CanvasRenderingContext2d>()?;
 
     // Define the heatmap matrix (3x3) with values representing different colors
@@ -226,35 +230,52 @@ pub fn start() -> Result<(), JsValue> {
             canvas_width,
             canvas_height,
             device_pixel_ratio,
-        );
-   
-    let closure = Closure::wrap(Box::new(move || {
-        let new_width = window_clone.inner_width().unwrap().as_f64().unwrap();
-        let new_height = window_clone.inner_height().unwrap().as_f64().unwrap();
-    
-        // Calculate canvas size based on window size
+        )?;
+
+    let handle_heatmap_resize = move || -> Result<(), JsValue> {
+        let new_width = window_clone.inner_width()
+            .map_err(|_| JsValue::from_str("error getting inner width"))?
+            .as_f64()
+            .ok_or_else(|| JsValue::from_str("error converting width to f64"))?;
+
+        let new_height = window_clone.inner_height()
+            .map_err(|_| JsValue::from_str("error getting inner height"))?
+            .as_f64()
+            .ok_or_else(|| JsValue::from_str("error converting height to f64"))?;
+
         let canvas_new_width = (num_cols as f64 * box_size).min(new_width);
         let canvas_new_height = (num_rows as f64 * box_size).min(new_height);
-    
+
         canvas.set_width(canvas_new_width as u32);
         canvas.set_height(canvas_new_height as u32);
-    
-        // Reset the scaling
-        context.set_transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0).unwrap();
-        context.scale(device_pixel_ratio, device_pixel_ratio).unwrap();
+
+        context.set_transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+            .map_err(|_| JsValue::from_str("error setting transform"))?;
+        context.scale(device_pixel_ratio, device_pixel_ratio)
+            .map_err(|_| JsValue::from_str("error scaling context"))?;
 
         draw_responsive_heatmap(
-           &context,
-           heatmap_values.clone(),
-           x_labels.clone(),
-           y_labels.clone(),
-           canvas_new_width.into(),
-           canvas_new_height.into(),
-           device_pixel_ratio,
-        );
-    }) as Box<dyn FnMut()>);
+            &context,
+            heatmap_values.clone(),
+            x_labels.clone(),
+            y_labels.clone(),
+            canvas_new_width,
+            canvas_new_height,
+            device_pixel_ratio,
+        )?;
+        Ok(())
+    };
+
+    // Wrap the closure_func to handle errors
+    let error_handled_heatmap_resize = move || {
+        if let Err(e) = handle_heatmap_resize() {
+            console::error_1(&e);
+        }
+    };
+   
+    let closure = Closure::wrap(Box::new(error_handled_heatmap_resize) as Box<dyn FnMut()>);
     
-    window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref()).unwrap();
+    window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
     closure.forget();
 
     Ok(())
