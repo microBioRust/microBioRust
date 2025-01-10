@@ -1,8 +1,199 @@
+//!  The purpose of seqmetrics is to allow calculations of protein sequence parameters
+//!  We define a set of amino acid getters to allow getting of the protein sequence
+//!  as either the three letter code such as Trp, Phe, the full name such as alanine, glycine
+//!  or the single letter code such as Y, A
+//!
+//!   Example function to calculate transmembrane statistics
+//!
+//! ```rust
+//!
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust_microSeqIO::gbk::Reader;
+//! use std::io;
+//! use std::collections::HashMap;
+//! use seqmetrics::metrics::hydrophobicity;
+//!
+//! pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
+//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let mut reader = Reader::new(file_gbk);
+//!            let mut records = reader.records();
+//!            loop {  
+//!                match records.next() {  
+//!                    Some(Ok(mut record)) => {
+//!                       //println!("next record");
+//!                       //println!("Record id: {:?}", record.id);
+//!                       for (k, v) in &record.cds.attributes {
+//!                           match record.seq_features.get_sequence_faa(&k) {
+//!                                     Some(value) => { let seq_faa = value.to_string();
+//!				                      println!("{:?}", &seq_faa);
+//!				                      let hydro_values = hydrophobicity(&seq_faa, 21);
+//!						      let mut result = String::new();
+//!						      for hydro in hydro_values {
+//!						           if hydro > 1.6 {
+//!						               println!("possible transmembrane region - score {}",&hydro);  
+//!							       }
+//!						           else {
+//!						               ()
+//!							   }
+//!						      }
+//!                                                 },
+//!                                     _ => (),
+//!                                     };
+//!                       
+//!                           }
+//!                    },
+//!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
+//!                    None => {
+//!                             println!("finished iteration");
+//!                             break;
+//!                             },
+//!                    };
+//!               }
+//!            return Ok(());
+//!   }
+//!```   
+//!
+//!   Example function to calculate the molecular weight of a protein sequence
+//!
+//!```rust
+//!
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust_microSeqIO::gbk::Reader;
+//! use std::io;
+//! use std::collections::HashMap;
+//! use seqmetrics::metrics::molecular_weight;
+//!
+//! pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
+//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let mut reader = Reader::new(file_gbk);
+//!            let mut records = reader.records();
+//!	    let mut molecular_weight_total: f64 = 0.0;
+//!            loop {  
+//!                match records.next() {  
+//!                    Some(Ok(mut record)) => {
+//!                       //println!("next record");
+//!                       //println!("Record id: {:?}", record.id);
+//!                      for (k, v) in &record.cds.attributes {
+//!                           match record.seq_features.get_sequence_faa(&k) {
+//!                                     Some(value) => {
+//!                                                     let seq_faa = value.to_string();
+//!				                        println!("id: {:?}", &k);
+//!				                        molecular_weight_total = molecular_weight(&seq_faa);
+//!                                                     println!(">{}|{}\n{}", &record.id, &k, molecular_weight_total);
+//!                                                    },
+//!                                     _ => (),
+//!                                     };
+//!                       
+//!                           }
+//!                    },
+//!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
+//!                    None => {
+//!                              println!("finished iteration");
+//!                              break;
+//!                            },
+//!                    }
+//!               }
+//!            return Ok(());
+//!   }
+//!```
+//!
+//!   Example function to count amino acids of each protein as raw counts, see below to generate percentages per protein
+//!
+//!```rust
+//!
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust_microSeqIO::gbk::Reader;
+//! use std::io;
+//! use std::collections::HashMap;
+//! use seqmetrics::metrics::amino_counts;
+//!
+//! pub fn count_aminos() -> Result<(), anyhow::Error> {
+//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let mut reader = Reader::new(file_gbk);
+//!            let mut records = reader.records();
+//!	    let mut results: HashMap<char, u64> = HashMap::new();
+//!            loop {  
+//!                match records.next() {  
+//!                   Some(Ok(mut record)) => {
+//!                       //println!("next record");
+//!                       //println!("Record id: {:?}", record.id);
+//!                       for (k, v) in &record.cds.attributes {
+//!                           match record.seq_features.get_sequence_faa(&k) {
+//!                                     Some(value) => { let seq_faa = value.to_string();
+//!				                      println!("id: {:?}", &k);
+//!				                      results = amino_counts(&seq_faa);
+//!                                                      println!(">{}|{}\n{:?}", &record.id, &k, results);
+//!                                                      },
+//!                                     _ => (),
+//!                                     };
+//!                       
+//!                           }
+//!                    },
+//!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
+//!                    None => {
+//!                             println!("finished iteration");
+//!                             break;
+//!                             },
+//!                    }
+//!               }
+//!            return Ok(());
+//!   }
+//!```
+//!  Example function to calculate and print out the aromaticity of each protein
+//!
+//!```rust
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust_microSeqIO::gbk::Reader;
+//! use std::io;
+//! use std::collections::HashMap;
+//! use seqmetrics::metrics::amino_percentage;
+//!
+//! pub fn aromaticity() -> Result<(), anyhow::Error> {
+//!        // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
+//!        let file_gbk = File::open("test_output.gbk")?;
+//!	let mut reader = Reader::new(file_gbk);
+//!	let mut records = reader.records();
+//!	let mut results: HashMap<char, f64> = HashMap::new();
+//!	loop {
+//!	   match records.next() {
+//!	      Some(Ok(mut record)) => {
+//!	          for (k, v) in &record.cds.attributes {
+//!		     match record.seq_features.get_sequence_faa(&k) {
+//!		         Some(value) => {  let seq_faa = value.to_string();
+//!			                   results = amino_percentage(&seq_faa);
+//!					   let aromatic_aas = vec!['Y','W','F'];
+//!					   let aromaticity: f64 = aromatic_aas.iter()
+//!					       .filter_map(|&amino| results.get(&amino))
+//!					       .map(|&perc| perc / 100.0)
+//!					       .sum();
+//!					   println!("aromaticity for {} {} is {}",&record.id, &k, &aromaticity);
+//!					  },
+//!			_ => (),
+//!			};
+//!		   }
+//!	         },
+//!	    Some(Err(e)) => { println!("theres an error {:?}", e); },
+//!	    None => {
+//!                   println!("finished iteration");
+//!	              break;
+//!		    },
+//!	    }
+//!       }
+//!      return Ok(());
+//!   }
+//!```
+
+
 use clap::Parser;
 use std::fs::File;
 use microBioRust_microSeqIO::gbk::Reader;
 use std::io;
 use std::collections::HashMap;
+
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
