@@ -267,6 +267,18 @@ pub fn amino_counts(protein_seq: &str) -> HashMap<char, u64> {
     counts
 }
 
+pub fn amino_percentage(protein_seq: &str) -> HashMap<char, f64> {
+    let mut percentages: HashMap<char, f64> = HashMap::new();
+    let counts = amino_counts(protein_seq);
+    let seq_len: f64 = (protein_seq.len() as f64) as f64;
+    percentages = counts.iter().map(|(k, &value)| {
+        let percentage = (value as f64 / seq_len) * 100.0;
+	(k.clone(), percentage)
+	}).collect();
+    percentages
+}
+       
+
     
 #[cfg(test)]
 mod tests {
@@ -373,5 +385,39 @@ mod tests {
                     }
                }
             return Ok(());
+   }
+   
+   #[test]
+   pub fn aromaticity() -> Result<(), anyhow::Error> {
+        // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
+        let file_gbk = File::open("test_output.gbk")?;
+	let mut reader = Reader::new(file_gbk);
+	let mut records = reader.records();
+	let mut results: HashMap<char, f64> = HashMap::new();
+	loop {
+	   match records.next() {
+	      Some(Ok(mut record)) => {
+	          for (k, v) in &record.cds.attributes {
+		     match record.seq_features.get_sequence_faa(&k) {
+		         Some(value) => {  let seq_faa = value.to_string();
+			                   results = amino_percentage(&seq_faa);
+					   let aromatic_aas = vec!['Y','W','F'];
+					   let aromaticity: f64 = aromatic_aas.iter()
+					       .filter_map(|&amino| results.get(&amino))
+					       .map(|&perc| perc / 100.0)
+					       .sum();
+					   println!("aromaticity for {} {} is {}",&record.id, &k, &aromaticity);
+					  },
+			_ => (),
+			};
+		   }
+	         },
+	    Some(Err(e)) => { println!("theres an error {:?}", e); },
+	    None => { println!("finished iteration");
+	              break;
+		    },
+	    }
+       }
+      return Ok(());
    }
 }
