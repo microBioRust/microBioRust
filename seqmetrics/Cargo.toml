@@ -1,5 +1,5 @@
 [package]
-name = "seqmetrics"
+name = "microBioRust-seqmetrics"
 version = "0.1.1"
 edition = "2021"
 license = "MIT"
