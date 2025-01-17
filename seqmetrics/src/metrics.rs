@@ -195,7 +195,7 @@ use microBioRust::gbk::Reader;
 // Define a macro to generate the getters for each amino acid
 macro_rules! amino_acid_getters {
     ($struct_name:ident, $( ($field:ident, $full_name:ident, $three_letter:ident, $single_letter:ident) ),* ) => {
-        pub impl $struct_name {
+        impl $struct_name {
             $(
 	        // Capital full name getter
 		fn $field(&self) -> f64 {
