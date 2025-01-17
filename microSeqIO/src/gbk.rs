@@ -236,7 +236,6 @@
 
 use std::io::{self, Write};
 use std::fs;
-use std::env;
 use regex::Regex;
 use itertools::Itertools;
 use std::vec::Vec;
@@ -244,7 +243,6 @@ use std::str;
 use std::convert::AsRef;
 use protein_translate::translate;
 use std::path::Path;
-use std::process;
 use bio::alphabets::dna::revcomp;
 use anyhow::anyhow;
 use std::collections::BTreeMap;
