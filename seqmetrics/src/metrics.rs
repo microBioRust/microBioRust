@@ -9,10 +9,10 @@
 //!
 //! use clap::Parser;
 //! use std::fs::File;
-//! use microBioRust_microSeqIO::gbk::Reader;
+//! use microBioRust::gbk::Reader;
 //! use std::io;
 //! use std::collections::HashMap;
-//! use seqmetrics::metrics::hydrophobicity;
+//! use microBioRust_seqmetrics::metrics::hydrophobicity;
 //!
 //! pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
 //!            let file_gbk = File::open("test_output.gbk")?;
@@ -60,10 +60,10 @@
 //!
 //! use clap::Parser;
 //! use std::fs::File;
-//! use microBioRust_microSeqIO::gbk::Reader;
+//! use microBioRust::gbk::Reader;
 //! use std::io;
 //! use std::collections::HashMap;
-//! use seqmetrics::metrics::molecular_weight;
+//! use microBioRust_seqmetrics::metrics::molecular_weight;
 //!
 //! pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
 //!            let file_gbk = File::open("test_output.gbk")?;
@@ -105,10 +105,10 @@
 //!
 //! use clap::Parser;
 //! use std::fs::File;
-//! use microBioRust_microSeqIO::gbk::Reader;
+//! use microBioRust::gbk::Reader;
 //! use std::io;
 //! use std::collections::HashMap;
-//! use seqmetrics::metrics::amino_counts;
+//! use microBioRust_seqmetrics::metrics::amino_counts;
 //!
 //! pub fn count_aminos() -> Result<(), anyhow::Error> {
 //!            let file_gbk = File::open("test_output.gbk")?;
@@ -147,10 +147,10 @@
 //!```rust
 //! use clap::Parser;
 //! use std::fs::File;
-//! use microBioRust_microSeqIO::gbk::Reader;
+//! use microBioRust::gbk::Reader;
 //! use std::io;
 //! use std::collections::HashMap;
-//! use seqmetrics::metrics::amino_percentage;
+//! use microBioRust_seqmetrics::metrics::amino_percentage;
 //!
 //! pub fn aromaticity() -> Result<(), anyhow::Error> {
 //!        // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
@@ -190,7 +190,7 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use microBioRust_microSeqIO::gbk::Reader;
+use microBioRust::gbk::Reader;
 
 // Define a macro to generate the getters for each amino acid
 macro_rules! amino_acid_getters {
@@ -270,6 +270,7 @@ impl MolWeights {
       }
 }
 
+#[allow(non_snake_case)]
 pub fn molecular_weight(protein_seq: &str) -> f64 {
     let amino_weights: MolWeights = MolWeights::new();
     amino_acid_getters!(MolWeights,
@@ -375,6 +376,7 @@ impl Hydrophobicity {
       }
 }
 
+#[allow(non_snake_case)]
 pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
     let mut hydrophobicity: Hydrophobicity = Hydrophobicity::new_KD();
     let mut total_hydrophobicity: Vec<f64> = Vec::new();

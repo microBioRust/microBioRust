@@ -9,4 +9,3 @@
 //!  Additionally, you can create new features and records and save them either in genbank or gff3 format
 //!
 pub mod metrics;
-extern crate microBioRust_microSeqIO;

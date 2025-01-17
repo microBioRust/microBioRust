@@ -25,7 +25,7 @@
 //!```rust
 //! use clap::Parser;
 //! use std::fs::File;
-//! use microBioRust::gbk::Reader;
+//! use microBioRust_microSeqIO::gbk::Reader;
 //! use std::io;
 //!
 //! #[derive(Parser, Debug)]
@@ -66,9 +66,9 @@
 //!
 //!
 //! ```rust
-//!    use microBioRust::gbk::gff_write;
-//!    use microBioRust::gbk::Reader;
-//!    use microBioRust::gbk::Record;
+//!    use microBioRust_microSeqIO::gbk::gff_write;
+//!    use microBioRust_microSeqIO::gbk::Reader;
+//!    use microBioRust_microSeqIO::gbk::Record;
 //!    use std::collections::BTreeMap;
 //!    use std::fs::File;
 //!    use clap::Parser;
@@ -141,9 +141,9 @@
 //!
 //!
 //! ```rust
-//!    use microBioRust::gbk::gff_write;
-//!    use microBioRust::gbk::RangeValue;
-//!    use microBioRust::gbk::Record;
+//!    use microBioRust_microSeqIO::gbk::gff_write;
+//!    use microBioRust_microSeqIO::gbk::RangeValue;
+//!    use microBioRust_microSeqIO::gbk::Record;
 //!    use std::collections::BTreeMap;
 //!
 //!     pub fn create_new_record() -> Result<(), anyhow::Error> {

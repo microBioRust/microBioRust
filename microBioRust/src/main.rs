@@ -1,4 +1,4 @@
-use microBioRust_microSeqIO::gbk;
+use microBioRust::gbk;
 use std::fs::File;
 use clap::Parser;
 
