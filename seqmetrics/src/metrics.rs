@@ -188,20 +188,9 @@
 //!```
 
 
-use clap::Parser;
+use std::collections::HashMap;
 use std::fs::File;
 use microBioRust_microSeqIO::gbk::Reader;
-use std::io;
-use std::collections::HashMap;
-
-
-#[derive(Parser, Debug)]
-#[clap(author, version, about)]
-struct Arguments {
-  #[clap(short, long)]
-  filename: String,
-}
-
 
 // Define a macro to generate the getters for each amino acid
 macro_rules! amino_acid_getters {
