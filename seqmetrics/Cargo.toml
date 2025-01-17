@@ -1,7 +1,19 @@
 [package]
 name = "seqmetrics"
-version = "0.1.0"
-edition = "2021"
+version = "0.1.1"
+license = "MIT"
+keywords = ["bioinformatics","micro","bio","genomics","sequence-analysis"]
+description = "Microbiology friendly bioinformatics Rust functions"
+categories = ["science::bioinformatics::sequence-analysis", "science::bioinformatics::genomics", "science::bioinformatics","science","data-structures"]
+readme = "README.md"
+exclude = [".git",".gitignore"]
+repository = "https://github.com/LCrossman/microBioRust/microSeqIO"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lints.rust]
+unsafe_code = "forbid"
+
+
 
 [dependencies]
 microBioRust-microSeqIO = { path = "../microSeqIO" }
