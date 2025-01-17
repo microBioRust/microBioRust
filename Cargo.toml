@@ -1,6 +1,6 @@
 [workspace]
 members = [
-   "microSeqIO",
+   "microBioRust",
    "heatmap",
    "seqmetrics"]
 resolver = "2"
