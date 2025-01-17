@@ -15,6 +15,6 @@ repository = "https://github.com/LCrossman/microBioRust"
 unsafe_code = "forbid"
 
 [dependencies]
-microBioRust-microSeqIO = { path = "../microSeqIO" , version = "0.1.1" }
+microBioRust-microSeqIO = "0.1.1"
 anyhow = "1.0.93"
 clap = { version = "4.5.19", features = ["derive"] }
