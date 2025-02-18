@@ -18,6 +18,8 @@ Currently there is functionality for:<br>
 
 To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
 
+for more background please see https://LCrossman.github.io/microBioRust_details
+
 In microSeqIO:
 
  You can parse genbank files and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
