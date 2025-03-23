@@ -8,180 +8,34 @@
 //! Currently working with fixed data
 //! and a rusty colour theme
 
+pub mod heatmap_data;
+pub mod canvas;
+
+// internal imports
+use canvas::drawing::draw_responsive_heatmap;
+use heatmap_data::HeatmapData;
+
+// external imports
 use wasm_bindgen::prelude::*;
-use std::error::Error;
-use serde_wasm_bindgen;
-use serde::{Serialize, Deserialize};
 use wasm_bindgen::JsValue;
-use web_sys::{window, Document, HtmlCanvasElement, CanvasRenderingContext2d};
+use web_sys::{window, HtmlCanvasElement, CanvasRenderingContext2d};
 use web_sys::console;
 use std::rc::Rc;
-use std::cell::RefCell;
-
-
-pub fn draw_responsive_heatmap(
-    context: &CanvasRenderingContext2d,
-    values: Vec<Vec<i32>>,
-    x_labels: Vec<String>,
-    y_labels: Vec<String>,
-    canvas_width: f64,
-    canvas_height: f64,
-    device_pixel_ratio: f64,
-) -> Result<(), JsValue>
-{
-    let rows = values.len();
-    let cols = values[0].len();
-    console::log_1(&JsValue::from_str(&format!("up in the draw function")));
-    // Get canvas dimensions 
-    // Calculate dynamic padding and box size
-    let adj_canvas_width = canvas_width * device_pixel_ratio;
-    let adj_canvas_height = canvas_height * device_pixel_ratio;
-    let padding_left = adj_canvas_width * 0.05;
-    let padding_top = adj_canvas_height * 0.05;
-    let padding_bottom = adj_canvas_height * 0.05;
-    let padding_right = adj_canvas_width * 0.05;
-
-  //  let box_width = (adj_canvas_width - padding_left - padding_right) / (cols as f64 * 1.1);
-  //  let box_height = (adj_canvas_height - padding_top - padding_bottom) / (rows as f64 * 1.1);
-   
-    let box_width = 30.0;
-    let box_height = 30.0;
-    // Clear the canvas
-    console::log_1(&JsValue::from_str(&format!("pad left {} pad bottom {}",&padding_left, &padding_bottom)));
-    context.clear_rect(0.0, 0.0, adj_canvas_width, adj_canvas_height);
-    println!("cleared rec");
-    // Draw the heatmap
-    for row in 0..rows {
-        for col in 0..cols {
-            let value = values[row][col];
-
-            // Set color based on value
-            let color = match value {
-                0 => "#fee0d2",
-                1 => "#fc9272",
-                2 => "#de2d26",
-                _ => "#FFFFFF",
-            };
-            context.set_fill_style(&JsValue::from_str(color));
-
-            let x = padding_left + (col as f64 * box_width);
-            let y = padding_top + (row as f64 * box_height);
-            context.fill_rect(x, y, box_width, box_height);
-
-            // Draw box borders
-            context.set_stroke_style(&JsValue::from_str("#FFFFFF"));
-            context.set_line_width(2.0 / device_pixel_ratio);
-            
-            if row < rows - 1 {
-                context.begin_path();
-                context.move_to(x, y + box_height);
-                context.line_to(x + box_width, y + box_height);
-                context.stroke();
-            }
-
-            if col < cols - 1 {
-                context.begin_path();
-                context.move_to(x + box_width, y);
-                context.line_to(x + box_width, y + box_height);
-                context.stroke();
-            }
-        }
-    }
-    console::log_1(&JsValue::from_str(&format!(
-    "after the rows and cols padding bottom: {}, height: {}",
-         &padding_bottom,
-         &(box_height * rows as f64),
-            )));
-
-    // Draw X-axis
-    context.begin_path();
-    context.set_stroke_style(&JsValue::from_str("#000000"));
-    context.move_to(padding_left, (box_height * rows as f64) + padding_bottom);
-    context.line_to((box_height * rows as f64) + padding_bottom, (box_height * rows as f64) + padding_left);
-    context.stroke();
-    
-    // Draw Y-axis
-    context.begin_path();
-    context.move_to(padding_left, padding_top);
-    context.line_to(padding_left, (box_height * rows as f64) + padding_bottom);
-    context.stroke();
-
-    // Draw X-axis ticks and labels
-    let label_font_size = (box_height * 0.3).min(box_width * 0.3).max(12.0);
-    context.set_font(&format!("{}px Arial", label_font_size));
-    context.set_text_align("center");
-    context.set_text_baseline("top");
-    
-    for col in 0..cols {
-        let x = padding_left + col as f64 * box_width + box_width / 2.0;
-        let y = (box_height * rows as f64) + padding_bottom + 5.0;  // Position below the heatmap
-        context.fill_text(&x_labels[col], x, y)
-            .map_err(|_| JsValue::from_str(&format!("Failed to draw text at column {}", col)))?;
-
-        // Draw ticks
-        context.begin_path();
-        context.move_to(x, (box_height * rows as f64) + padding_bottom);
-        context.line_to(x, (box_height * rows as f64) + padding_bottom + 5.0);
-        context.stroke();
-    }
-
-    // Draw Y-axis ticks and labels
-    context.set_text_align("right");
-    context.set_text_baseline("middle");
-    
-    for row in 0..rows {
-        let x = padding_left - 10.0;  // Position to the left of the heatmap
-        let y = padding_top + row as f64 * box_height + box_height / 2.0;
-        context.fill_text(&y_labels[row], x, y)
-            .map_err(|_| JsValue::from_str(&format!("Failed to draw text at row {}", row)))?;;
-
-        // Draw ticks
-        context.begin_path();
-        context.move_to(padding_left, y);
-        context.line_to(padding_left - 5.0, y);
-        context.stroke();
-    }
-    console::log_1(&JsValue::from_str(&format!(
-    "at the end of draw funct Canvas width: {}, height: {}",
-        &adj_canvas_width,
-        &adj_canvas_height
-         )));
-    Ok(())
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct HeatmapData {
-   values: Vec<Vec<i32>>,
-   x_labels: Vec<String>,
-   y_labels: Vec<String>,
-}
-
-impl HeatmapData {
-    // Constructor method
-    pub fn new() -> Self {
-        HeatmapData {
-            values: vec![vec![0]],
-            x_labels: Vec::new(),
-            y_labels: Vec::new(),
-        }
-    }
-}
-
 
 //returns a JsValue to javascript
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     // Get the window and document
     console::log_1(&JsValue::from_str(&format!("literal start")));
-    let window = window().expect("should have a window in this context");
+    let window = window().ok_or(JsValue::from_str("should have a window in this context"))?;
     let window = Rc::new(window);
     let window_clone = Rc::clone(&window);
-    let document = window.document().ok_or_else(|| JsValue::from_str("no document"))?;
+    let document = window.document().ok_or(JsValue::from_str("no document"))?;
     console::log_1(&JsValue::from_str(&format!("up in the start of the function")));
     // Get the canvas element
     let canvas = document
         .get_element_by_id("heatmap")
-        .expect("Canvas element not found")
+        .ok_or(JsValue::from_str("Canvas element not found"))?
         .dyn_into::<HtmlCanvasElement>()?;
     console::log_1(&JsValue::from_str(&format!("called the canvas")));
     let heatmap_values = vec![
@@ -198,7 +52,9 @@ pub fn start() -> Result<(), JsValue> {
     let num_rows = heatmap_values.len();      // Should be 5
     let num_cols = heatmap_values[0].len();   // Should be 5
     let mut heatmap_data = HeatmapData::new();
-    heatmap_data = HeatmapData { values: heatmap_values.clone(), x_labels: x_labels.clone(), y_labels: y_labels.clone() };
+    heatmap_data.values = heatmap_values.clone();
+    heatmap_data.x_labels = x_labels.clone();
+    heatmap_data.y_labels = y_labels.clone();
     let box_size = 100.0;
     let device_pixel_ratio = window.device_pixel_ratio();
     console::log_1(&JsValue::from_str(&format!("num rows are {:?} num cols are {:?}", &num_rows, &num_cols)));
@@ -216,11 +72,11 @@ pub fn start() -> Result<(), JsValue> {
 
     let context = canvas
         .get_context("2d")?
-        .ok_or_else(|| JsValue::from_str("Context not found"))?
+        .ok_or(JsValue::from_str("Context not found"))?
         .dyn_into::<CanvasRenderingContext2d>()?;
 
     // Define the heatmap matrix (3x3) with values representing different colors
-    context.scale(device_pixel_ratio, device_pixel_ratio);
+    context.scale(device_pixel_ratio, device_pixel_ratio)?;
     
     draw_responsive_heatmap(
             &context,
@@ -236,12 +92,12 @@ pub fn start() -> Result<(), JsValue> {
         let new_width = window_clone.inner_width()
             .map_err(|_| JsValue::from_str("error getting inner width"))?
             .as_f64()
-            .ok_or_else(|| JsValue::from_str("error converting width to f64"))?;
+            .ok_or(JsValue::from_str("error converting width to f64"))?;
 
         let new_height = window_clone.inner_height()
             .map_err(|_| JsValue::from_str("error getting inner height"))?
             .as_f64()
-            .ok_or_else(|| JsValue::from_str("error converting height to f64"))?;
+            .ok_or(JsValue::from_str("error converting height to f64"))?;
 
         let canvas_new_width = (num_cols as f64 * box_size).min(new_width);
         let canvas_new_height = (num_rows as f64 * box_size).min(new_height);
