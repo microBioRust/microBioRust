@@ -1,4 +1,4 @@
-use microBioRust::gbk;
+use microBioRust::embl::Reader;
 use std::fs::File;
 use clap::Parser;
 
@@ -13,15 +13,17 @@ pub struct Arguments {
 fn main() -> Result<(), anyhow::Error> {
             //collect filename from --filename input
             let args = Arguments::parse();
-            let file_gbk = File::open(&args.filename).expect("could not open file");
+            let file_embl = File::open(&args.filename).expect("could not open file");
             //create reader
-            let mut reader = gbk::Reader::new(file_gbk);
+            let mut reader = Reader::new(file_embl);
             //create records structure
             let mut records = reader.records();
-            //let mut read_counter: u32 = 0; 
+            let mut read_counter: u32 = 0;
             loop {  
-                match records.next() {  
+                match records.next() {
                     Some(Ok(mut record)) => {
+                       //println!("next");
+                       //println!("Record id: {:?}", record.id);
                        for (k,_v) in record.cds.attributes {
                            match record.seq_features.get_sequence_faa(&k) {
                                  Some(value) => { let seq_faa = value.to_string();
@@ -31,12 +33,12 @@ fn main() -> Result<(), anyhow::Error> {
                                   };
                        
                            }
-                       //read_counter+=1;
+                       read_counter+=1;
                     },
                     Some(Err(e)) => { println!("theres an err {:?}", e); },
                     None => break,
                     }
                }
-            //println!("Total records processed: {}", read_counter);
+            println!("Total records processed: {}", read_counter);
             Ok(())
 }
