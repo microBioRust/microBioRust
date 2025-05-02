@@ -61,9 +61,38 @@
 //!  }
 //!```
 //!
+//!  Example to extract the protein sequences with simplified genbank! macro use
 //!
+//!```rust
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust::gbk::Reader;
+//! use std::io;
+//! use microBioRust::genbank;
+//!
+//!
+//! #[derive(Parser, Debug)]
+//! #[clap(author, version, about)]
+//! struct Arguments {
+//! #[clap(short, long)]
+//! filename: String,
+//! }
+//!
+//! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+//!            let args = Arguments::parse();
+//!            let records = genbank!(&args.filename);
+//!            for record in records {
+//!	          for (k, v) in &record.cds.attributes {
+//!                  if let Some(seq) = record.seq_features.get_sequence_faa(k) {
+//!		        println!(">{}|{}\n{}", &record.id, &k, seq);
+//!                     }
+//!                  }
+//!            }
+//!            return Ok(());
+//!  }
+//!
+//!```
 //!  Example to save a provided multi- or single genbank file as a GFF file (by joining any multi-genbank)
-//!
 //!
 //! ```rust
 //!    use microBioRust::gbk::gff_write;
@@ -337,6 +366,28 @@ macro_rules! create_builder {
             }
      };
 }
+
+#[macro_export]
+macro_rules! genbank {
+    ($filename:expr) => {{
+        use std::fs::File;
+        use std::io::BufReader;
+        let file = File::open($filename)
+            .unwrap_or_else(|e| panic!("Could not open file {}: {}", $filename, e));
+        let mut reader = $crate::gbk::Reader::new(file);
+        let mut vec = Vec::new();
+        for rec in reader.records() {
+            match rec {
+                Ok(r) => { println!("this is r {:?}", &r);
+		           vec.push(r);
+			   }
+                Err(e) => panic!("Error reading record: {:?}", e),
+            }
+        }
+        vec
+    }};
+}
+
 
 //const MAX_GBK_BUFFER_SIZE: usize = 512;
 /// A Gbk reader.
