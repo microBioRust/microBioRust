@@ -14,16 +14,32 @@ Questions and comments - please join the Discord server :) [here](https://discor
 Currently there is functionality for:<br>
 
  # 1. A Genbank to GFF parser
- # 2. A Heatmap plot with wasm and d3.js
+ # 2. An Embl to GFF and GBK parser
+ # 3. A Heatmap plot with wasm and d3.js
 
 To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
 
 for more background please see https://LCrossman.github.io/microBioRust_details
 
-In microSeqIO:
+In microBioRust:
 
  You can parse genbank files and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
-
+ Super simple way:
+```
+pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+            let args = Arguments::parse();
+            let records = genbank!(&args.filename);
+            for record in records.iter() {
+                  for (k, v) in &record.cds.attributes {
+                  if let Some(seq) = record.seq_features.get_sequence_faa(k) {
+                        println!(">{}|{}\n{}", &record.id, &k, seq);
+                     }
+                  }
+            }
+            return Ok(());
+}
+```
+ Better for Debugging:
 
 ```
  pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
