@@ -19,9 +19,38 @@
 //! 3. Sequence features, ```SequenceAttributes```, construct(enum) of counter (locus tag), sequence_ffn (DNA gene sequence) sequence_faa (protein translation), strand, codon start, start, stop [cds/gene]
 //! 4. The DNA sequence of the whole record (or contig)
 //!
-//!  Example to extract and print all the protein sequence fasta, example using getters or get_ functionality
+//!  Example to extract and print all the protein sequence fasta, example using getters (or get_ functionality), simplified embl! macro
+//!
+//!```rust
+//! use clap::Parser;
+//! use std::fs::File;
+//! use microBioRust::embl::Reader;
+//! use std::io;
+//! use microBioRust::embl;
 //!
 //!
+//! #[derive(Parser, Debug)]
+//! #[clap(author, version, about)]
+//! struct Arguments {
+//! #[clap(short, long)]
+//! filename: String,
+//! }
+//!
+//! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+//!            let args = Arguments::parse();
+//!            let records = embl!(&args.filename);
+//!            for record in records {
+//!               for (k, v) in &record.cds.attributes {
+//!                  if let Some(seq) = record.seq_features.get_sequence_faa(k) {
+//!                     println!(">{}|{}\n{}", &record.id, &k, seq);
+//!                     }
+//!                  }
+//!            }
+//!            return Ok(());
+//!  }
+//!```
+//!
+//! Example to extract protein sequence from embl file, debugging use
 //!```rust
 //! use clap::Parser;
 //! use std::fs::File;
@@ -337,6 +366,28 @@ macro_rules! create_builder {
             }
      };
 }
+
+#[macro_export]
+macro_rules! embl {
+    ($filename:expr) => {{
+        use std::fs::File;
+        use std::io::BufReader;
+        let file = File::open($filename)
+            .unwrap_or_else(|e| panic!("Could not open file {}: {}", $filename, e));
+        let mut reader = $crate::embl::Reader::new(file);
+        let mut vec = Vec::new();
+        for rec in reader.records() {
+            match rec {
+                Ok(r) => { println!("this is r {:?}", &r);
+                           vec.push(r);
+                           }
+                Err(e) => panic!("Error reading record: {:?}", e),
+            }
+        }
+        vec
+    }};
+}
+
 
 //const MAX_EMBL_BUFFER_SIZE: usize = 512;
 /// An EMBL reader.
