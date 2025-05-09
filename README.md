@@ -5,6 +5,7 @@ The aim of this crate is to provide Microbiology friendly Rust functions for bio
 Very much under construction!<br>
 
 Some concepts with many thanks to Rust-bio<br>
+Please see the Roadmap for futher details [here](https://github.com/LCrossman/microBioRust/issues/18)
 
 To install Rust - please see here [Rust install](https://www.rust-lang.org/tools/install) or with Conda<br>
 If you would like to contribute please follow the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct)
