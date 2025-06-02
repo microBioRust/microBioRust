@@ -1,5 +1,7 @@
-# microBioRust
+# `microBioRust`
+
 ## A Rust bioinformatics crate aimed at Microbial genomics<br>
+
 The aim of this crate is to provide Microbiology friendly Rust functions for bioinformatics.<br>
 
 To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
@@ -8,101 +10,111 @@ In microSeqIO:
 
  You can parse genbank files and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
 
+```rust
 
-```
- pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
-             let args: Vec<String> = env::args().collect();
-             let config = Config::new(&args).unwrap_or_else(|err| {
-                println!("Problem with parsing file arguments: {}", err);
-                process::exit(1);
-                });
-            let file_gbk = fs::File::open(config.filename)?;
-            let mut reader = Reader::new(file_gbk);
-            let mut records = reader.records();
-           let mut cds_counter: u32 = 0;
-               loop {
-                //collect from each record advancing on a next record basis, count cds records
-                match records.next() {       
-                    Some(Ok(mut record)) => {
-                                  for (k, v) in &record.cds.attributes {
-                                      match record.seq_features.get_sequence_faa(&k) {
-                                          Some(value) => { let seq_faa = value.to_string();
-                                                           println!(">{}|{}\n{}", &record.id, &k, seq_faa);
-                                                           },
-                                          _ => (),
-                                         };
-                    
-                                      }
-                                      cds_counter+=1;
-                                      },
-                    Some(Err(e)) => { println!("Error encountered - an err {:?}", e); },
-                   None => {
-                          println!("finished iteration");
-                         break; },
-                    }
-                 }
-            println!("Total records processed: {}", read_counter);
-           return Ok(());
-  }
+pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+    let args: Vec<String> = env::args().collect();
+    let config = Config::new(&args).unwrap_or_else(|err| {
+        println!("Problem with parsing file arguments: {}", err);
+        process::exit(1);
+    });
+    let file_gbk = fs::File::open(config.filename)?;
+    let mut reader = Reader::new(file_gbk);
+    let mut records = reader.records();
+    let mut cds_counter: u32 = 0;
+    loop {
+        //collect from each record advancing on a next record basis, count cds records
+        match records.next() {
+            Some(Ok(mut record)) => {
+                for (k, v) in &record.cds.attributes {
+                    match record.seq_features.get_sequence_faa(&k) {
+                        Some(value) => {
+                            let seq_faa = value.to_string();
+                            println!(">{}|{}\n{}", &record.id, &k, seq_faa);
+                        }
+                        _ => (),
+                    };
+                }
+                cds_counter += 1;
+            }
+            Some(Err(e)) => {
+                println!("Error encountered - an err {:?}", e);
+            }
+            None => {
+                println!("finished iteration");
+                break;
+            }
+        }
+    }
+    println!("Total records processed: {}", read_counter);
+    return Ok(());
+}
 ```
 
   Example to save a provided multi- or single genbank file as a GFF file (by joining any multi-genbank)
 
-
-```
-    pub fn genbank_to_gff() -> io::Result<()> {
-        let args: Vec<String> = env::args().collect();
-        let config = Config::new(&args).unwrap_or_else(|err| {
-            println!("Problem with parsing file arguments: {}", err);
-            process::exit(1);
-            });
-        let file_gbk = fs::File::open(&config.filename)?;
-        let prev_start: u32 = 0;
-       let mut prev_end: u32 = 0;
-        let mut reader = Reader::new(file_gbk);
-        let mut records = reader.records();
-        let mut read_counter: u32 = 0;
-        let mut seq_region: BTreeMap<String, (u32,u32)> = BTreeMap::new();
-        let mut record_vec: Vec<Record> = Vec::new();
-        loop {  
-            match records.next() {   
-                Some(Ok(mut record)) => {
-                    //println!("next record");
-                    //println!("Record id: {:?}", record.id);
-                    let source = record.source_map.source_name.clone().expect("issue collecting source name");
-                    let beginning = match record.source_map.get_start(&source) {
-                                     Some(value) => value.get_value(),
-                                     _ => 0,
-                                     };
-                   let ending = match record.source_map.get_stop(&source) {
-                                     Some(value) => value.get_value(),
-                                     _ => 0,
-                                     };
-                  if ending + prev_end < beginning + prev_end {
-                       }
-                    seq_region.insert(source, (beginning + prev_end, ending + prev_end));
-                    record_vec.push(record);
-                    // Add additional fields to print if needed
-                    read_counter+=1;
-                   prev_end+=ending; // create the joined record if there are multiple
-                   },
-                Some(Err(e)) => { println!("theres an err {:?}", e); },
-                 None => {
-                    println!("finished iteration");
-                          break; },
-                }
+```rust
+pub fn genbank_to_gff() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let config = Config::new(&args).unwrap_or_else(|err| {
+        println!("Problem with parsing file arguments: {}", err);
+        process::exit(1);
+    });
+    let file_gbk = fs::File::open(&config.filename)?;
+    let prev_start: u32 = 0;
+    let mut prev_end: u32 = 0;
+    let mut reader = Reader::new(file_gbk);
+    let mut records = reader.records();
+    let mut read_counter: u32 = 0;
+    let mut seq_region: BTreeMap<String, (u32, u32)> = BTreeMap::new();
+    let mut record_vec: Vec<Record> = Vec::new();
+    loop {
+        match records.next() {
+            Some(Ok(mut record)) => {
+                //println!("next record");
+                //println!("Record id: {:?}", record.id);
+                let source = record
+                    .source_map
+                    .source_name
+                    .clone()
+                    .expect("issue collecting source name");
+                let beginning = match record.source_map.get_start(&source) {
+                    Some(value) => value.get_value(),
+                    _ => 0,
+                };
+                let ending = match record.source_map.get_stop(&source) {
+                    Some(value) => value.get_value(),
+                    _ => 0,
+                };
+                if ending + prev_end < beginning + prev_end {}
+                seq_region.insert(source, (beginning + prev_end, ending + prev_end));
+                record_vec.push(record);
+                // Add additional fields to print if needed
+                read_counter += 1;
+                prev_end += ending; // create the joined record if there are multiple
             }
-        let output_file = format!("{}.gff", &config.filename);
-        gff_write(seq_region.clone(), record_vec, &output_file, true);
-        println!("Total records processed: {}", read_counter);
-        return Ok(());
+            Some(Err(e)) => {
+                println!("theres an err {:?}", e);
+            }
+            None => {
+                println!("finished iteration");
+                break;
+            }
+        }
+    }
+    let output_file = format!("{}.gff", &config.filename);
+    gff_write(seq_region.clone(), record_vec, &output_file, true);
+    println!("Total records processed: {}", read_counter);
+    return Ok(());
+}
 ```
+
  Example to create a completely new record, use of setters or set_ functionality
 
  To write into GFF format requires gff_write(seq_region, record_vec, filename, true or false)
 
- The seq_region is the region of interest to save with name and DNA coordinates such as ``` seqregion.entry("source_1".to_string(), (1,897))```
- This makes it possible to save the whole file or to subset it 
+ The seq_region is the region of interest to save with name and DNA coordinates such as ```seqregion.entry("source_1".to_string(), (1,897))```
+ This makes it possible to save the whole file or to subset it
 
  record_vec is a list of the records.  If there is only one record, include this as a vec using ``` vec![record] ```
 
@@ -110,7 +122,7 @@ In microSeqIO:
 
  To write into genbank format requires gbk_write(seq_region, record_vec, filename), no true or false since genbank format will include the DNA sequence
 
- ```
+ ```rust
     pub fn create_new_record() -> Result<(), anyhow::Error> {
         let filename = format!("new_record.gff");
          let mut record = Record::new();
@@ -197,4 +209,3 @@ GATTTTTACGTCAACGCCGGCAGGAACAACGACCGGTGCTTTAGCAACACGAGACAT".to_string();
         return Ok(());
       }
 ```
-
