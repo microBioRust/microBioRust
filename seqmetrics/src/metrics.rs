@@ -188,6 +188,8 @@
 //!```
 
 use std::collections::HashMap;
+use microBioRust::gbk::Reader;
+use std::fs::File;
 
 // Define a macro to generate the getters for each amino acid
 #[macro_export]
