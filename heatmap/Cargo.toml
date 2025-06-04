@@ -20,6 +20,6 @@ opt-level = "z"
 serde-wasm-bindgen = "0.6.5"
 serde = { version = "1.0.213", features = ["derive"] }
 serde_derive = "1.0"
-wasm-bindgen = "0.2.91"
-web-sys = { version = "0.3.72", features = ["console","CanvasRenderingContext2d", "HtmlCanvasElement", "Document", "Window"] }
+wasm-bindgen = "0.2.100"
+web-sys = { version = "0.3.77", features = ["console","CanvasRenderingContext2d", "HtmlCanvasElement", "Document", "Window"] }
 csv = "1.1"

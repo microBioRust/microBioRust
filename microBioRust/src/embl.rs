@@ -284,7 +284,7 @@ use chrono::prelude::*;
 
 
 /// macro to create get_ functions for the values
-#[macro_use]
+#[macro_export]
 macro_rules! create_getters {
     // macro for creating get methods
     ($struct_name:ident, $attributes:ident, $enum_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
@@ -311,7 +311,8 @@ macro_rules! create_getters {
     };
 }
 
-/// macro to create the set_ functions for the values in a Builder format 
+/// macro to create the set_ functions for the values in a Builder format
+#[macro_export]
 macro_rules! create_builder {
     // Macro for creating attribute builders for SourceAttributes, FeatureAttributes and SequenceAttributes
     ($builder_name:ident, $attributes:ident, $enum_name:ident, $counter_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
@@ -857,7 +858,7 @@ pub enum SourceAttributes {
     DbXref { value:String}
 }
 
-///macro for creating the getters
+//macro for creating the getters
 create_getters!(
     SourceAttributeBuilder,
     source_attributes,

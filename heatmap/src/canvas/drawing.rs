@@ -44,14 +44,16 @@ pub fn draw_responsive_heatmap(
                 2 => "#de2d26",
                 _ => "#FFFFFF",
             };
-            context.set_fill_style(&JsValue::from_str(color));
+            //context.set_fill_style_str(&JsValue::from(color));
+	    context.set_fill_style_str(color);
 
             let x = padding_left + (col as f64 * box_width);
             let y = padding_top + (row as f64 * box_height);
             context.fill_rect(x, y, box_width, box_height);
 
             // Draw box borders
-            context.set_stroke_style(&JsValue::from_str("#FFFFFF"));
+            //context.set_stroke_style(&JsValue::from("#FFFFFF"));
+	    context.set_stroke_style_str("#FFFFFF");
             context.set_line_width(2.0 / device_pixel_ratio);
             
             if row < rows - 1 {
@@ -77,7 +79,8 @@ pub fn draw_responsive_heatmap(
 
     // Draw X-axis
     context.begin_path();
-    context.set_stroke_style(&JsValue::from_str("#000000"));
+    //context.set_stroke_style_str(&JsValue::from("#000000"));
+    context.set_stroke_style_str("#000000");
     context.move_to(padding_left, (box_height * rows as f64) + padding_bottom);
     context.line_to((box_height * rows as f64) + padding_bottom, (box_height * rows as f64) + padding_left);
     context.stroke();

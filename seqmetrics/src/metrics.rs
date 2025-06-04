@@ -187,12 +187,10 @@
 //!   }
 //!```
 
-
 use std::collections::HashMap;
-use std::fs::File;
-use microBioRust::gbk::Reader;
 
 // Define a macro to generate the getters for each amino acid
+#[macro_export]
 macro_rules! amino_acid_getters {
     ($struct_name:ident, $( ($field:ident, $full_name:ident, $three_letter:ident, $single_letter:ident) ),* ) => {
         impl $struct_name {
@@ -218,7 +216,8 @@ macro_rules! amino_acid_getters {
     };
 }
 
-
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 pub struct MolWeights {
     Alanine: f64,
     Arginine: f64,
@@ -271,6 +270,8 @@ impl MolWeights {
 }
 
 #[allow(non_snake_case)]
+#[allow(dead_code)]
+#[allow(unused_variables)]
 pub fn molecular_weight(protein_seq: &str) -> f64 {
     let amino_weights: MolWeights = MolWeights::new();
     amino_acid_getters!(MolWeights,
@@ -325,6 +326,8 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
    result_weight
 }
 
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 pub struct Hydrophobicity {
     Alanine: f64,
     Arginine: f64,
@@ -349,6 +352,7 @@ pub struct Hydrophobicity {
 }
 
 impl Hydrophobicity {
+    #[allow(non_snake_case)]
     fn new_KD() -> Self {
        Self {
               //Kyte-Doolittle values from the Qiagen resources website
@@ -377,6 +381,9 @@ impl Hydrophobicity {
 }
 
 #[allow(non_snake_case)]
+#[allow(dead_code)]
+#[allow(unused_mut)]
+#[allow(unused_variables)]
 pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
     let mut hydrophobicity: Hydrophobicity = Hydrophobicity::new_KD();
     let mut total_hydrophobicity: Vec<f64> = Vec::new();
@@ -449,6 +456,8 @@ pub fn amino_counts(protein_seq: &str) -> HashMap<char, u64> {
     counts
 }
 
+#[allow(unused_mut)]
+#[allow(unused_variables)]
 pub fn amino_percentage(protein_seq: &str) -> HashMap<char, f64> {
     let mut percentages: HashMap<char, f64> = HashMap::new();
     let counts = amino_counts(protein_seq);
