@@ -271,12 +271,7 @@ impl MolWeights {
       }
 }
 
-#[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(unused_variables)]
-pub fn molecular_weight(protein_seq: &str) -> f64 {
-    let amino_weights: MolWeights = MolWeights::new();
-    amino_acid_getters!(MolWeights,
+amino_acid_getters!(MolWeights,
              (Alanine, alanine, Ala, A),
              (Arginine, arginine, Arg, R),
              (Asparagine, asparagine, Asn, N),
@@ -294,10 +289,16 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
              (Proline, proline, Pro, P),
              (Serine, serine, Ser, S),
              (Threonine, threonine, Thr, T),
-             (Tryptophan, trytophan, Trp, W),
+             (Tryptophan, tryptophan, Trp, W),
              (Tyrosine, tyrosine, Tyr, Y),
              (Valine, valine, Val, V)
              );
+
+#[allow(non_snake_case)]
+#[allow(dead_code)]
+#[allow(unused_variables)]
+pub fn molecular_weight(protein_seq: &str) -> f64 {
+    let amino_weights: MolWeights = MolWeights::new();
     let mut total_weight = 0.0;
     for ch in protein_seq.chars() {
        match ch {
@@ -382,15 +383,7 @@ impl Hydrophobicity {
       }
 }
 
-#[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(unused_mut)]
-#[allow(unused_variables)]
-pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
-    let mut hydrophobicity: Hydrophobicity = Hydrophobicity::new_KD();
-    let mut total_hydrophobicity: Vec<f64> = Vec::new();
-    let mut window_values: f64 = 0.0;
-    amino_acid_getters!(Hydrophobicity,
+amino_acid_getters!(Hydrophobicity,
              (Alanine, alanine, Ala, A),
              (Arginine, arginine, Arg, R),
              (Asparagine, asparagine, Asn, N),
@@ -412,6 +405,15 @@ pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
              (Tyrosine, tyrosine, Tyr, Y),
              (Valine, valine, Val, V)
              );
+
+#[allow(non_snake_case)]
+#[allow(dead_code)]
+#[allow(unused_mut)]
+#[allow(unused_variables)]
+pub fn hydrophobicity(protein_seq: &str, window_size: usize) -> Vec<f64> {
+    let mut hydrophobicity: Hydrophobicity = Hydrophobicity::new_KD();
+    let mut total_hydrophobicity: Vec<f64> = Vec::new();
+    let mut window_values: f64 = 0.0;
     let mut windows: Vec<String> = protein_seq
            .chars()
 	   .collect::<Vec<_>>()
