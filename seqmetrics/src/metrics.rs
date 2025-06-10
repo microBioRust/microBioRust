@@ -186,15 +186,61 @@
 //!      return Ok(());
 //!   }
 //!```
+//!  The purpose of hamming.rs is to allow calculations of the hamming distances between sequences
+//!  The Hamming distance is the minimum number of substitutions required to change one string to another
+//!  It is one of several string metrics for measuring the edit distance between two sequences.
+//!  It does not encompass or take into account any biology
+//!  It is named after the American Mathematician Richard Hamming (wikipedia)
+//!  This is aimed essentially at protein fasta sequences 
+//!  
+//!
+//!  ```
+//!  use microBioRust_seqmetrics::hamming::hamming_matrix;
+//!  use microBioRust_seqmetrics::write_dst_csv::write_distances_csv;
+//!  use tokio::fs::File;
+//!  use std::collections::HashMap;
+//!  use bio::io::fasta;
+//!  use tokio::io;
+//!  use tokio::io::{AsyncWriteExt, BufWriter};
+//!
+//!
+//!  #[tokio::main]
+//!  async fn main() -> Result<(), anyhow::Error> {
+//!            let reader = fasta::Reader::new(std::io::stdin());
+//!            let records: Vec<_> = reader.records().collect::<Result<_, _>>()?;
+//!	    println!("gathering records");
+//!            let sequences: Vec<String> = records
+//!	                          .iter()
+//!				  .map(|rec| String::from_utf8_lossy(rec.seq()).to_string())
+//!				  .collect();
+//!            let ids: Vec<String> = records
+//!	                          .iter()
+//!				  .map(|rec| rec.id().to_string())
+//!				  .collect();
+//!	    println!("gathered ids");
+//!	    let distances = hamming_matrix(&sequences).await?;
+//!	    write_distances_csv(ids, distances, "hamming_dists.csv").await?;
+//!
+//!         Ok(()) 
+//!  }
+//!  ```
 
-use std::collections::HashMap;
+#[allow(unused_imports)]
 use microBioRust::gbk::Reader;
 use std::fs::File;
+//use tokio::io;
+use std::collections::HashMap;
+use crate::hamming::hamming_matrix;
+use crate::write_dst_csv::write_distances_csv;
+use bio::io::fasta;
+
 
 // Define a macro to generate the getters for each amino acid
 #[macro_export]
 macro_rules! amino_acid_getters {
     ($struct_name:ident, $( ($field:ident, $full_name:ident, $three_letter:ident, $single_letter:ident) ),* ) => {
+        #[allow(non_snake_case)]
+	#[allow(dead_code)]
         impl $struct_name {
             $(
 	        // Capital full name getter
@@ -243,6 +289,8 @@ pub struct MolWeights {
     Valine: f64,
 }
 
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 impl MolWeights {
     fn new() -> Self {
        Self {
@@ -270,6 +318,7 @@ impl MolWeights {
              }
       }
 }
+
 
 amino_acid_getters!(MolWeights,
              (Alanine, alanine, Ala, A),
@@ -462,6 +511,8 @@ pub fn amino_counts(protein_seq: &str) -> HashMap<char, u64> {
 
 #[allow(unused_mut)]
 #[allow(unused_variables)]
+#[allow(unused_assignments)]
+#[allow(dead_code)]
 pub fn amino_percentage(protein_seq: &str) -> HashMap<char, f64> {
     let mut percentages: HashMap<char, f64> = HashMap::new();
     let counts = amino_counts(protein_seq);
@@ -472,7 +523,6 @@ pub fn amino_percentage(protein_seq: &str) -> HashMap<char, f64> {
 	}).collect();
     percentages
 }
-       
 
     
 #[cfg(test)]
@@ -480,6 +530,9 @@ mod tests {
     use super::*;
 
    #[test]
+   #[allow(unused_mut)]
+   #[allow(dead_code)]
+   #[allow(unused_variables)]
    pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
             let file_gbk = File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
@@ -519,6 +572,10 @@ mod tests {
    }
    
    #[test]
+   #[allow(unused_mut)]
+   #[allow(dead_code)]
+   #[allow(unused_variables)]
+   #[allow(unused_assignments)]
    pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
             let file_gbk = File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
@@ -551,6 +608,9 @@ mod tests {
    }
 
    #[test]
+   #[allow(unused_mut)]
+   #[allow(unused_variables)]
+   #[allow(unused_assignments)]
    pub fn count_aminos() -> Result<(), anyhow::Error> {
             let file_gbk = File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
@@ -558,10 +618,8 @@ mod tests {
 	    let mut results: HashMap<char, u64> = HashMap::new();
             loop {  
                 match records.next() {  
-                    Some(Ok(mut record)) => {
-                       //println!("next record");
-                       //println!("Record id: {:?}", record.id);
-                       for (k, v) in &record.cds.attributes {
+                    Some(Ok(record)) => {
+                       for (k, _v) in &record.cds.attributes {
                            match record.seq_features.get_sequence_faa(&k) {
                                      Some(value) => { let seq_faa = value.to_string();
 				                      println!("id: {:?}", &k);
@@ -583,16 +641,20 @@ mod tests {
    }
    
    #[test]
+   #[allow(dead_code)]
+   #[allow(unused_mut)]
+   #[allow(unused_variables)]
+   #[allow(unused_assignments)]
    pub fn aromaticity() -> Result<(), anyhow::Error> {
         // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
         let file_gbk = File::open("test_output.gbk")?;
-	let mut reader = Reader::new(file_gbk);
+	let reader = Reader::new(file_gbk);
 	let mut records = reader.records();
 	let mut results: HashMap<char, f64> = HashMap::new();
 	loop {
 	   match records.next() {
-	      Some(Ok(mut record)) => {
-	          for (k, v) in &record.cds.attributes {
+	      Some(Ok(record)) => {
+	          for (k, _v) in &record.cds.attributes {
 		     match record.seq_features.get_sequence_faa(&k) {
 		         Some(value) => {  let seq_faa = value.to_string();
 			                   results = amino_percentage(&seq_faa);
@@ -615,4 +677,20 @@ mod tests {
        }
       return Ok(());
    }
+   #[tokio::test]
+   pub async fn main() -> Result<(), anyhow::Error> {
+               let reader = fasta::Reader::new(File::open("test_hamming.aln")?);
+               let records: Vec<_> = reader.records().collect::<Result<_, _>>()?;
+               let sequences: Vec<String> = records
+                               .iter()
+                               .map(|rec| String::from_utf8_lossy(rec.seq()).to_string())
+                               .collect();
+               let ids: Vec<String> = records
+                               .iter()
+                               .map(|rec| rec.id().to_string())
+                               .collect();
+         let distances = hamming_matrix(&sequences).await?;
+         let _ = write_distances_csv(ids, distances, "hamming_dists.csv");
+         Ok(())
+         }
 }

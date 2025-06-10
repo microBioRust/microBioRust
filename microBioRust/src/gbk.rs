@@ -284,7 +284,7 @@ use chrono::prelude::*;
 
 
 /// macro to create get_ functions for the values
-#[macro_use]
+#[macro_export]
 macro_rules! create_getters {
     // macro for creating get methods
     ($struct_name:ident, $attributes:ident, $enum_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
@@ -311,7 +311,8 @@ macro_rules! create_getters {
     };
 }
 
-/// macro to create the set_ functions for the values in a Builder format 
+/// macro to create the set_ functions for the values in a Builder format
+#[macro_export] 
 macro_rules! create_builder {
     // Macro for creating attribute builders for SourceAttributes, FeatureAttributes and SequenceAttributes
     ($builder_name:ident, $attributes:ident, $enum_name:ident, $counter_name:ident, $( $field:ident { value: $type:ty } ),* ) => {
@@ -393,6 +394,7 @@ macro_rules! genbank {
 /// A Gbk reader.
 
 #[derive(Debug)]
+#[allow(unused_mut)]
 pub struct Records<B>
 where
     B: io::BufRead,
@@ -405,6 +407,7 @@ impl<B> Records<B>
 where
     B: io::BufRead,
 {
+    #[allow(unused_mut)]
     pub fn new(mut reader: Reader<B>) -> Self {
         Records {
             reader: reader,
@@ -499,6 +502,9 @@ impl<'a, B> GbkRead for Reader<B>
 where
     B: io::BufRead,
 {
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(unused_assignments)]
     fn read(&mut self, record: &mut Record) -> Result<Record, anyhow::Error> {
         record.rec_clear();
 	//println!("reading new record");
@@ -820,7 +826,7 @@ impl RangeValue {
     }
 }
 
-///stores the details of the source features in genbank (contigs)
+//stores the details of the source features in genbank (contigs)
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum SourceAttributes {
     Start { value: RangeValue },
@@ -833,7 +839,7 @@ pub enum SourceAttributes {
     DbXref { value:String}
 }
 
-///macro for creating the getters
+//macro for creating the getters
 create_getters!(
     SourceAttributeBuilder,
     source_attributes,
@@ -1117,7 +1123,7 @@ pub fn write_gbk_format_sequence(sequence: &str,file: &mut File) -> io::Result<(
        let mut formatted = String::new();
        let cleaned_input = sequence.replace("\n", "");
        let mut index = 1;
-       for (i, chunk) in cleaned_input.as_bytes().chunks(60).enumerate() {
+       for (_i, chunk) in cleaned_input.as_bytes().chunks(60).enumerate() {
            formatted.push_str(&format!("{:>5} ", index));
 	   for (j, sub_chunk) in chunk.chunks(10).enumerate() {
 	      if j > 0 {
@@ -1143,7 +1149,7 @@ pub fn gbk_write(seq_region: BTreeMap<String, (u32,u32)>, record_vec: Vec<Record
            .append(true)    // Enable appending to the file
            .create(true)    // Create the file if it doesn't exist
            .open(filename)?;
-       for (i, (key, val)) in seq_region.iter().enumerate() {
+       for (i, (key, _val)) in seq_region.iter().enumerate() {
 	   let strain  = match &record_vec[i].source_map.get_strain(key) {
 	          Some(value) => value.to_string(),
 	          None => "Unknown".to_string(),
@@ -1187,7 +1193,7 @@ pub fn gbk_write(seq_region: BTreeMap<String, (u32,u32)>, record_vec: Vec<Record
 	       }
 	   writeln!(file, "                     /db_xref=\"{}\"",&db_xref)?;
 	   //write lines for each CDS
-	   for (locus_tag, value) in &record_vec[i].cds.attributes {
+	   for (locus_tag, _value) in &record_vec[i].cds.attributes {
 	      let start  = match &record_vec[i].cds.get_start(locus_tag) {
 	          Some(value) => value.get_value(),
 	          None => { println!("start value not found");
@@ -1249,6 +1255,7 @@ pub fn gbk_write(seq_region: BTreeMap<String, (u32,u32)>, record_vec: Vec<Record
 	       	       
 ///saves the parsed data in gff3 format
 //writes a gff3 file from a genbank
+#[allow(unused_assignments)]
 pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
        let mut file = OpenOptions::new()
            //.write(true)     // Allow writing to the file
@@ -1433,6 +1440,7 @@ impl Default for Record {
      }
 }
 
+#[allow(dead_code)]
 pub struct Config {
     filename: String,
 }
@@ -1453,6 +1461,10 @@ mod tests {
     use super::*;
     
     #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
     pub fn genbank_to_gff() -> io::Result<()> {
         let file_gbk = fs::File::open("test_output.gbk")?;
         let prev_start: u32 = 0;
@@ -1497,6 +1509,9 @@ mod tests {
         return Ok(());
     }
     #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(unused_assignments)]
     pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
             let file_gbk = fs::File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
@@ -1528,6 +1543,9 @@ mod tests {
             return Ok(());
 	    }
      #[test]
+     #[allow(unused_mut)]
+     #[allow(unused_assignments)]
+     #[allow(unused_variables)]
      pub fn genbank_to_ffn() -> Result<(), anyhow::Error> {
             let file_gbk = fs::File::open("test_output.gbk")?;
             let mut reader = Reader::new(file_gbk);
@@ -1573,6 +1591,9 @@ mod tests {
      /// record_vec is a list of the records.  If there is only one record ``` vec![record] ``` will suffice
      /// filename is the required filename string, true/false is whether the DNA sequence should be included in the GFF3 file
      /// Some GFF3 files have the DNA sequence, whilst others do not.  Some tools require the DNA sequence included.
+     #[allow(unused_mut)]
+     #[allow(unused_assignments)]
+     #[allow(unused_variables)]
      pub fn create_new_record() -> Result<(), anyhow::Error> {
             let filename = format!("new_record.gff");
 	    let mut record = Record::new();

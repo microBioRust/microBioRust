@@ -1,6 +1,7 @@
 use web_sys::{CanvasRenderingContext2d, console};
 use wasm_bindgen::JsValue;
 
+
 pub fn draw_responsive_heatmap(
     context: &CanvasRenderingContext2d,
     values: Vec<Vec<i32>>,
@@ -21,7 +22,7 @@ pub fn draw_responsive_heatmap(
     let padding_left = adj_canvas_width * 0.05;
     let padding_top = adj_canvas_height * 0.05;
     let padding_bottom = adj_canvas_height * 0.05;
-    let padding_right = adj_canvas_width * 0.05;
+    let _padding_right = adj_canvas_width * 0.05;
 
   //  let box_width = (adj_canvas_width - padding_left - padding_right) / (cols as f64 * 1.1);
   //  let box_height = (adj_canvas_height - padding_top - padding_bottom) / (rows as f64 * 1.1);

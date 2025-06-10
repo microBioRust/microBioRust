@@ -7,7 +7,7 @@
 //! It requires the index.html in the static directory
 //! Currently working with fixed data
 //! and a rusty colour theme
-
+#![allow(non_snake_case)]
 pub mod heatmap_data;
 pub mod canvas;
 
