@@ -20,7 +20,9 @@ Currently there is functionality for:<br>
 
 # 2. An Embl to GFF and GBK parser
 
-# 3. A Heatmap plot with wasm and d3.js
+# 3. Calculate sequence metrics <i>e.g.</i> hydrophobicity, distance measures
+
+# 4. A Heatmap plot with wasm and d3.js
 
 To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
 
