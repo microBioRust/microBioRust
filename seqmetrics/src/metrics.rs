@@ -225,10 +225,9 @@
 //!  }
 //!  ```
 
-#[allow(unused_imports)]
+#![allow(unused_imports)]
 use microBioRust::gbk::Reader;
 use std::fs::File;
-//use tokio::io;
 use std::collections::HashMap;
 use crate::hamming::hamming_matrix;
 use crate::write_dst_csv::write_distances_csv;

@@ -1,5 +1,4 @@
 #[allow(unused_imports)]
-use tokio::fs::File;
 
 //function to calculate the hamming distance between 2 sequences
 pub fn hamming_distance(seq1: &str, seq2: &str) -> usize {
