@@ -123,8 +123,8 @@
 //!        loop {  
 //!            match records.next() {	
 //!                Some(Ok(mut record)) => {
-//!	               //println!("next record");
-//!                    //println!("Record id: {:?}", record.id);
+//!	               println!("next record");
+//!                    println!("Record id: {:?}", record.id);
 //!		       let source = record.source_map.source_name.clone().expect("issue collecting source name");
 //!		       let beginning = match record.source_map.get_start(&source) {
 //!		                        Some(value) => value.get_value(),
@@ -150,6 +150,10 @@
 //!	            }
 //!            }
 //!        let output_file = format!("{}.gff", &args.filename);
+//!        if std::path::Path::new(&output_file).exists() {
+//!           println!("Deleting existing file: {}", &output_file);
+//!           std::fs::remove_file(&output_file).expect("NOOO");
+//!           }
 //!        gff_write(seq_region.clone(), record_vec, &output_file, true);
 //!        println!("Total records processed: {}", read_counter);
 //!        return Ok(());
@@ -173,10 +177,14 @@
 //!    use microBioRust::gbk::gff_write;
 //!    use microBioRust::gbk::RangeValue;
 //!    use microBioRust::gbk::Record;
+//!    use std::fs::File;
 //!    use std::collections::BTreeMap;
 //!
 //!     pub fn create_new_record() -> Result<(), anyhow::Error> {
 //!         let filename = format!("new_record.gff");
+//!         if std::path::Path::new(&filename).exists() {
+//!           std::fs::remove_file(&filename)?;
+//!           }
 //!	    let mut record = Record::new();
 //!	    let mut seq_region: BTreeMap<String, (u32,u32)> = BTreeMap::new();
 //!         //example from E.coli K12
@@ -1092,7 +1100,7 @@ impl<'a> GFFOuter<'a> {
        }
 }
 
-///formats the translation string which can be mulitple lines, for gbk
+///formats the translation string which can be multiple lines, for gbk
 pub fn format_translation(translation: &str) -> String {
 	       //create method to add the protein sequence into the translation qualifier with correct line lengths
 	       let mut formatted = String::new();
@@ -1349,7 +1357,7 @@ pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Recor
 	  }
           if dna {
              writeln!(file, "##FASTA")?;
-	     writeln!(file, ">{}\n",&filename.to_string())?;
+	     //writeln!(file, ">{}\n",&filename.to_string())?;
              writeln!(file, "{}", full_seq)?;
 	     }
           Ok(())
@@ -1672,7 +1680,7 @@ AACACCGATAACCATTGAGTTCAGCAGGGCACGCGCGGTACCAGCCTGTGCCCAACCGTC
 TGCGTAACCATCACGCGGACCGAAGGTCAGGGTATTATCTGCATGTTTAACTTCAACAGC
 ATCGTTGAGAGTACGAGTCAGCTCGCCGTTTTTACCTTTGATCGTAATAACCTGACCGTT
 GATTTTTACGTCAACGCCGGCAGGAACAACGACCGGTGCTTTAGCAACACGAGACA".to_string();
-           gff_write(seq_region.clone(), vec![record.clone()], "test_output.gff", true)?;
+           gff_write(seq_region.clone(), vec![record.clone()], "new_output.gff", true)?;
 	   gbk_write(seq_region, vec![record], "new_output.gbk")?;
 	   return Ok(());
       }

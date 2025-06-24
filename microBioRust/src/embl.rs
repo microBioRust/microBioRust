@@ -1293,7 +1293,7 @@ pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Recor
 	  }
           if dna {
              writeln!(file, "##FASTA")?;
-	     writeln!(file, ">{}\n",&filename.to_string())?;
+	     //writeln!(file, ">{}\n",&filename.to_string())?;
              writeln!(file, "{}", full_seq)?;
 	     }
           Ok(())
@@ -1612,8 +1612,8 @@ AACACCGATAACCATTGAGTTCAGCAGGGCACGCGCGGTACCAGCCTGTGCCCAACCGTC
 TGCGTAACCATCACGCGGACCGAAGGTCAGGGTATTATCTGCATGTTTAACTTCAACAGC
 ATCGTTGAGAGTACGAGTCAGCTCGCCGTTTTTACCTTTGATCGTAATAACCTGACCGTT
 GATTTTTACGTCAACGCCGGCAGGAACAACGACCGGTGCTTTAGCAACACGAGACA".to_string();
-           gff_write(seq_region.clone(), vec![record.clone()], "test_output.gff", true)?;
-	   gbk_write(seq_region, vec![record], "new_output.gbk")?;
+           gff_write(seq_region.clone(), vec![record.clone()], "new_output_embl.gff", true)?;
+	   gbk_write(seq_region, vec![record], "new_output_embl.gbk")?;
 	   return Ok(());
       }
 }
