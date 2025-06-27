@@ -4,11 +4,29 @@
 
 The aim of this crate is to provide Microbiology friendly Rust functions for bioinformatics.<br>
 
-To use a specific workspace (at the moment microSeqIO or heatmap) clone the project, cd into the specific directory required and build the project from there
+To use a specific workspace, clone the project from GitHub, cd into the specific directory required and build the project from there
 
-In microSeqIO:
+ You can parse genbank files and convert to a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
+ You can also parse embl files and convert to a GFF (gff3) format as well as extracting the DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa).  You can also convert the embl to a gbk format.
+ There's now a pyo3 with Python Interop where you can import as a PyModule.
 
- You can parse genbank files and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
+The simple way: parsing your genbank or embl file using the genbank! or embl! macros
+
+```rust
+
+pub fn genbank_to_faa(filename: &str) -> Result<(), anyhow::Error> {
+    let records = genbank!(&filename);
+    for record in records.iter() {
+        for (k, _v) in &record.cds.attributes {
+            if let Some(seq) = record.seq_features.get_sequence_faa(k) {
+                println!(">{}|{}\n{}", &record.id, &k, seq);
+            }
+        }
+    }
+    return Ok(());
+}
+
+better for debugging
 
 ```rust
 
