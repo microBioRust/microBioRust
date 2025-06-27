@@ -26,4 +26,4 @@ default = []
 extension-module = ["pyo3/extension-module"]
 
 [dependencies]
-microBioRust = { path = "../microBioRust" }
+microBioRust = "0.1.2"
