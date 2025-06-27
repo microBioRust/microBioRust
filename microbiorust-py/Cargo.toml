@@ -6,7 +6,6 @@ license = "MIT"
 keywords = ["bioinformatics","micro","bio","genomics","sequence-analysis"]
 description = "Microbiology friendly bioinformatics Rust functions"
 categories = ["science::bioinformatics::sequence-analysis", "science::bioinformatics::genomics", "science::bioinformatics","science","data-structures"]
-readme = "README.md"
 exclude = [".git",".gitignore"]
 repository = "https://github.com/LCrossman/microBioRust"
 
