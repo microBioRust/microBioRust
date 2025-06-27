@@ -1,0 +1,19 @@
+[package]
+name = "microbiorust-py"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "microbiorust"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies.pyo3]
+version = "0.25.0" 
+features = ["auto-initialize"]
+
+[features]
+default = []
+extension-module = ["pyo3/extension-module"]
+
+[dependencies]
+microBioRust = { path = "../microBioRust" }

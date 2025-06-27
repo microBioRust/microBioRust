@@ -1195,12 +1195,12 @@ pub fn gbk_write(seq_region: BTreeMap<String, (u32,u32)>, record_vec: Vec<Record
 	  }
 	  Ok(())
 }
-	   
-	       	       
+
 ///saves the parsed data in gff3 format
-//writes a gff3 file from an embl
+//writes a gff3 file from a genbank
 #[allow(unused_assignments)]
-pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
+#[allow(unused_variables)]
+pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, mut record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
        let mut file = OpenOptions::new()
            //.write(true)     // Allow writing to the file
            .append(true)    // Enable appending to the file
@@ -1209,55 +1209,53 @@ pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Recor
        if file.metadata()?.len() == 0 {
            writeln!(file, "##gff-version 3")?;
 	   }
-       let mut source_name = String::new();
        let mut full_seq = String::new();
        let mut prev_end: u32 = 0;
        //println!("this is the full seq_region {:?}", &seq_region);
        for (k, v) in seq_region.iter() {
           writeln!(file, "##sequence-region\t{}\t{}\t{}", &k, v.0, v.1)?;
 	  }
-       for (i, (key, val)) in seq_region.iter().enumerate() {
-	  source_name = key.to_string();
+       for ((source_name, (seq_start, seq_end)), record) in seq_region.iter().zip(record_vec.drain(..)) {
 	  if dna == true {
-	     full_seq.push_str(&record_vec[i].sequence);
+	     full_seq.push_str(&record.sequence);
              }
-           for (locus_tag, _valu) in &record_vec[i].cds.attributes {
-               let start  = match record_vec[i].cds.get_start(locus_tag) {
+           for (locus_tag, _valu) in &record.cds.attributes {
+               let start  = match record.cds.get_start(&locus_tag) {
 	          Some(value) => value.get_value(),
 	          None => { println!("start value not found");
 	                   None }.expect("start value not received")
 	          };
-	      let stop  = match record_vec[i].cds.get_stop(locus_tag) {
+	      let stop  = match record.cds.get_stop(&locus_tag) {
 	          Some(value) => value.get_value(),
 	          None => { println!("stop value not found");
 	                   None }.expect("stop value not received")
 	          };
-	      let gene  = match record_vec[i].cds.get_gene(locus_tag) {
+	      let gene  = match record.cds.get_gene(&locus_tag) {
 	          Some(value) => value.to_string(),
 	          None => "unknown".to_string(),
 	          };
-	      let product  = match record_vec[i].cds.get_product(locus_tag) {
+	      let product  = match record.cds.get_product(&locus_tag) {
 	          Some(value) => value.to_string(),
 	          None => "unknown product".to_string(),
 	          };
-	      let strand  = match record_vec[i].cds.get_strand(locus_tag) {
+	      let strand  = match record.cds.get_strand(&locus_tag) {
 	          Some(valu) => {
 	             match valu {
 		        1 => "+".to_string(),
 		        -1 => "-".to_string(),
-		        _ => { println!("unexpected strand value {} for locus_tag {}", valu, locus_tag);
+		        _ => { println!("unexpected strand value {} for locus_tag {}", valu, &locus_tag);
 		            "unknownstrand".to_string() }
 		     }
 	          },
 	          None => "unknownvalue".to_string(),
 	       };
-	       let phase = match record_vec[i].cds.get_codon_start(locus_tag) {
+	       let phase = match record.cds.get_codon_start(&locus_tag) {
 	          Some(valuer) => {
 	             match valuer {
 		        1 => 0,
 		        2 => 1,
 		        3 => 2,
-		        _ => { println!("unexpected phase value {} in the bagging area for locus_tag {}", valuer, locus_tag);
+		        _ => { println!("unexpected phase value {} in the bagging area for locus_tag {}", valuer, &locus_tag);
 		            1 }
 		     }
 	          },
@@ -1289,7 +1287,7 @@ pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Recor
               writeln!(file, "{}\t{}\t{}\t{:?}\t{:?}\t{}\t{}\t{}\t{}", gff_outer.seqid, gff_outer.source, gff_outer.type_val, gff_outer.start, gff_outer.end, gff_outer.score, gff_outer.strand, gff_outer.phase, field9_attributes)?;
           
 	  }
-	  prev_end = val.1;
+	  prev_end = *seq_end;
 	  }
           if dna {
              writeln!(file, "##FASTA")?;
@@ -1298,6 +1296,7 @@ pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Recor
 	     }
           Ok(())
 }
+
 
 ///internal record containing data from a single source or contig.  Has multiple features.
 //sets up a record

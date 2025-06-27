@@ -982,7 +982,7 @@ create_getters!(
 #[derive(Debug, Default, Clone)]
 pub struct SequenceAttributeBuilder {
     pub seq_attributes: BTreeMap<String, HashSet<SequenceAttributes>>,
-    locus_tag: Option<String>,
+    pub locus_tag: Option<String>,
 }
 
 create_builder!(
@@ -1012,14 +1012,14 @@ pub fn substitute_odd_punctuation(input: String) -> Result<String, anyhow::Error
 ///GFF3 field9 construct
 #[derive(Debug)]
 pub struct GFFInner {
-    id: String,
-    name: String,
-    locus_tag: String,
-    gene: String,
+    pub id: String,
+    pub name: String,
+    pub locus_tag: String,
+    pub gene: String,
    // Inference: String,
    // Parent: String,
  //   db_xref: String,
-    product: String,
+    pub product: String,
    // is_circular: bool,
 }
 
@@ -1043,15 +1043,15 @@ impl GFFInner {
 ///The main GFF3 construct
 #[derive(Debug)]
 pub struct GFFOuter<'a> {
-    seqid: String,
-    source: String,
-    type_val: String,
-    start: u32,
-    end: u32,
-    score: f64,
-    strand: String,
-    phase: u8,
-    attributes: &'a GFFInner,
+    pub seqid: String,
+    pub source: String,
+    pub type_val: String,
+    pub start: u32,
+    pub end: u32,
+    pub score: f64,
+    pub strand: String,
+    pub phase: u8,
+    pub attributes: &'a GFFInner,
 }
 
 impl<'a> GFFOuter<'a> {
@@ -1259,12 +1259,112 @@ pub fn gbk_write(seq_region: BTreeMap<String, (u32,u32)>, record_vec: Vec<Record
 	  }
 	  Ok(())
 }
-	   
+
+///saves the parsed data in gff3 format
+//writes a gff3 file from a genbank
+#[allow(unused_assignments)]
+#[allow(unused_variables)]
+pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, mut record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
+       let mut file = OpenOptions::new()
+           //.write(true)     // Allow writing to the file
+           .append(true)    // Enable appending to the file
+           .create(true)    // Create the file if it doesn't exist
+           .open(filename)?;
+       if file.metadata()?.len() == 0 {
+           writeln!(file, "##gff-version 3")?;
+	   }
+       let mut full_seq = String::new();
+       let mut prev_end: u32 = 0;
+       //println!("this is the full seq_region {:?}", &seq_region);
+       for (k, v) in seq_region.iter() {
+          writeln!(file, "##sequence-region\t{}\t{}\t{}", &k, v.0, v.1)?;
+	  }
+       for ((source_name, (seq_start, seq_end)), record) in seq_region.iter().zip(record_vec.drain(..)) {
+	  if dna == true {
+	     full_seq.push_str(&record.sequence);
+             }
+           for (locus_tag, _valu) in &record.cds.attributes {
+               let start  = match record.cds.get_start(locus_tag) {
+	          Some(value) => value.get_value(),
+	          None => { println!("start value not found");
+	                   None }.expect("start value not received")
+	          };
+	      let stop  = match record.cds.get_stop(locus_tag) {
+	          Some(value) => value.get_value(),
+	          None => { println!("stop value not found");
+	                   None }.expect("stop value not received")
+	          };
+	      let gene  = match record.cds.get_gene(locus_tag) {
+	          Some(value) => value.to_string(),
+	          None => "unknown".to_string(),
+	          };
+	      let product  = match record.cds.get_product(locus_tag) {
+	          Some(value) => value.to_string(),
+	          None => "unknown product".to_string(),
+	          };
+	      let strand  = match record.cds.get_strand(locus_tag) {
+	          Some(valu) => {
+	             match valu {
+		        1 => "+".to_string(),
+		        -1 => "-".to_string(),
+		        _ => { println!("unexpected strand value {} for locus_tag {}", valu, locus_tag);
+		            "unknownstrand".to_string() }
+		     }
+	          },
+	          None => "unknownvalue".to_string(),
+	       };
+	       let phase = match record.cds.get_codon_start(locus_tag) {
+	          Some(valuer) => {
+	             match valuer {
+		        1 => 0,
+		        2 => 1,
+		        3 => 2,
+		        _ => { println!("unexpected phase value {} in the bagging area for locus_tag {}", valuer, locus_tag);
+		            1 }
+		     }
+	          },
+	          None => 1,
+	       };
+              let gff_inner = GFFInner::new(
+                 locus_tag.to_string(),
+	         source_name.clone(),
+	         locus_tag.to_string(),
+	         gene,
+	    //  &record.cds.get_Inference(&locus_tag),
+	    //  &record.cds.get_Parent(&locus_tag),
+	   //   db_xref,
+	         product,
+	         );
+              let gff_outer = GFFOuter::new(
+                 source_name.clone(),
+                 ".".to_string(),
+                 "CDS".to_string(),
+                 start + prev_end,
+                 stop + prev_end,
+                 0.0,
+                 strand,
+                 phase,
+                 &gff_inner,
+	         );
+	      let field9_attributes = gff_outer.field9_attributes_build();
+	      //println!("{}\t{}\t{}\t{:?}\t{:?}\t{}\t{}\t{}\t{}", gff_outer.seqid, gff_outer.source, gff_outer.type_val, gff_outer.start, gff_outer.end, gff_outer.score, gff_outer.strand, gff_outer.phase, field9_attributes);
+              writeln!(file, "{}\t{}\t{}\t{:?}\t{:?}\t{}\t{}\t{}\t{}", gff_outer.seqid, gff_outer.source, gff_outer.type_val, gff_outer.start, gff_outer.end, gff_outer.score, gff_outer.strand, gff_outer.phase, field9_attributes)?;
+          
+	  }
+	  prev_end = *seq_end;
+	  }
+          if dna {
+             writeln!(file, "##FASTA")?;
+	     //writeln!(file, ">{}\n",&filename.to_string())?;
+             writeln!(file, "{}", full_seq)?;
+	     }
+          Ok(())
+}
 	       	       
 ///saves the parsed data in gff3 format
 //writes a gff3 file from a genbank
 #[allow(unused_assignments)]
-pub fn gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
+pub fn orig_gff_write(seq_region: BTreeMap<String, (u32, u32)>, record_vec: Vec<Record>, filename: &str, dna: bool) -> io::Result<()> {
        let mut file = OpenOptions::new()
            //.write(true)     // Allow writing to the file
            .append(true)    // Enable appending to the file

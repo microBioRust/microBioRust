@@ -2,7 +2,8 @@
 members = [
    "microBioRust",
    "heatmap",
-   "seqmetrics"]
+   "seqmetrics", 
+   "microbiorust-py"]
 resolver = "2"
 
 [profile.dev]
