@@ -1,5 +1,5 @@
 site_name: microBioRust docs
-site_url: https://LCrossman.github.io/microBioRust
+site_url: https://LCrossman.github.io/microBioRust/
 theme:
   name: material
   font:
