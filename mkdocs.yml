@@ -17,8 +17,20 @@ theme:
          name: Switch to light mode
        primary: custom
        accent: custom
+nav:
+  - Index: index.md
+  - Installation: installation.md
+  - Windows Install: windows_install.md
+  - Usage: usage.md
 features:
   - navigation.tabs
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 custom_dir: overrides
 extra_css:
   - stylesheets/extra.css
