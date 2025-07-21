@@ -71,11 +71,11 @@ cargo test
   
 The above test instance runs over multiple files packed with the repo, and a final output message can help us in understanding errors. Typically, successful installation gives the following last few lines:  
 
-![Screen Image](docs/images/window_code.png){ loading=lazy }
+![Screen Image](images/window_code.png){ loading=lazy }
   
 Congratulations!! You have successfully installed microBioRust in your system. You can proceed with Getting started section of the documentation.  
 
 > Session Information:  
 
-![PC Specs](docs/images/pc_specs.png){ loading=lazy }
-![System model](docs/images/system_model.png){ loading=lazy }
+![PC Specs](images/pc_specs.png){ loading=lazy }
+![System model](images/system_model.png){ loading=lazy }
