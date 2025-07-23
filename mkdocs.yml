@@ -2,6 +2,8 @@ site_name: microBioRust docs
 site_url: https://lcrossman.github.io/microBioRust/
 theme:
   name: material
+  # logo: images/pc_specs.png
+  # favicon: images/pc_specs.png
   font:
      text: "Open Sans"
   palette:
