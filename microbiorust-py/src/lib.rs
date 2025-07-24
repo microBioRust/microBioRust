@@ -21,19 +21,19 @@
 
 
 #![allow(unused_imports)]
-use pyo3::prelude::*;
-use pyo3::types::PyModule;
+use pyo3::{
+   prelude::*,
+   types::PyModule,
+};
 use microBioRust::genbank;
+use std::{
+   collections::BTreeMap,
+   io::{self, Write},
+   fs::OpenOptions,
+};
+use microBioRust::gbk::{Record, Reader, RangeValue, gff_write};
 use microBioRust::embl;
-use std::collections::BTreeMap;
-use microBioRust::gbk::Record;
-use microBioRust::gbk::Reader;
-use std::io::Write;
-use microBioRust::gbk::RangeValue;
-use microBioRust::gbk::gff_write;
 use microBioRust::embl::gff_write as embl_gff_write;
-use std::fs::OpenOptions;
-use std::io;
 
 
 
