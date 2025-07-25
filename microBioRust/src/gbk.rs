@@ -71,7 +71,7 @@
 //!     fs::File,
 //!     io,
 //! };
-//! use microBioRust{
+//! use microBioRust::{
 //!     gbk::Reader,
 //!     genbank,
 //! };

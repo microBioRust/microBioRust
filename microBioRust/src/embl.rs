@@ -27,7 +27,7 @@
 //!     fs::File,
 //!     io,
 //! };
-//! use microBioRust::embl::{self, Reader};
+//! use microBioRust::{embl, embl::{Reader}};
 //!
 //! #[derive(Parser, Debug)]
 //! #[clap(author, version, about)]
