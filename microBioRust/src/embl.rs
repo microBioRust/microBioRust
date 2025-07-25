@@ -23,11 +23,11 @@
 //!
 //!```rust
 //! use clap::Parser;
-//! use std::fs::File;
-//! use microBioRust::embl::Reader;
-//! use std::io;
-//! use microBioRust::embl;
-//!
+//! use std::{
+//!     fs::File,
+//!     io,
+//! };
+//! use microBioRust::embl::{self, Reader};
 //!
 //! #[derive(Parser, Debug)]
 //! #[clap(author, version, about)]
@@ -53,9 +53,11 @@
 //! Example to extract protein sequence from embl file, debugging use
 //!```rust
 //! use clap::Parser;
-//! use std::fs::File;
+//! use std::{
+//!     fs::File,
+//!     io,
+//! };
 //! use microBioRust::embl::Reader;
-//! use std::io;
 //!
 //! #[derive(Parser, Debug)]
 //! #[clap(author, version, about)]
@@ -95,13 +97,13 @@
 //!
 //!
 //! ```rust
-//!    use microBioRust::embl::gff_write;
-//!    use microBioRust::embl::Reader;
-//!    use microBioRust::embl::Record;
+//!    use microBioRust::embl::{gff_write, Reader, Record};
 //!    use std::collections::BTreeMap;
-//!    use std::fs::File;
+//!    use std::{
+//!        fs::File,
+//!        io,
+//!    };
 //!    use clap::Parser;
-//!    use std::io;
 //!
 //!   #[derive(Parser, Debug)]
 //!   #[clap(author, version, about)]
@@ -170,9 +172,7 @@
 //!
 //!
 //! ```rust
-//!    use microBioRust::embl::gff_write;
-//!    use microBioRust::embl::RangeValue;
-//!    use microBioRust::embl::Record;
+//!    use microBioRust::embl::{gff_write, RangeValue, Record};
 //!    use std::collections::BTreeMap;
 //!
 //!     pub fn create_new_record() -> Result<(), anyhow::Error> {
@@ -263,30 +263,26 @@
 //!```
 //!
 
-use std::io::{self, Write};
-use std::fs;
+use std::{
+	io::{self, Write},
+	fs::{self, OpenOptions, File},
+	vec::Vec,
+	str,
+	convert::{AsRef, TryInto},
+	path::Path,
+	collections::{BTreeMap, HashSet},
+};
 use regex::Regex;
-use std::vec::Vec;
-use std::str;
-use std::convert::AsRef;
 use protein_translate::translate;
-use std::path::Path;
 use bio::alphabets::dna::revcomp;
-use anyhow::anyhow;
-use std::collections::BTreeMap;
-use std::fs::{OpenOptions, File};
-use anyhow::Context;
-use std::collections::HashSet;
+use anyhow::{anyhow, Context};
 use paste::paste;
-use std::convert::TryInto;
 use chrono::prelude::*;
 
 
-/// import macro to create get_ functions for the values
-use crate::create_getters;
-
-/// import macro to create the set_ functions for the values in a Builder format
-use crate::create_builder;
+/// import macro to create get_ functions for the values and
+/// macro to create the set_ functions for the values in a Builder format
+use crate::{create_getters, create_builder};
 
 
 #[macro_export]

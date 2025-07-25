@@ -1,9 +1,8 @@
-use microBioRust::gbk::gbk_write;
-use microBioRust::gbk::gff_write;
-use microBioRust::gbk::RangeValue;
-use microBioRust::gbk::Record;
-use std::fs::File;
-use std::collections::BTreeMap;
+use microBioRust::gbk::{gbk_write, gff_write, RangeValue, Record};
+use std::{
+     fs::File,
+     collections::BTreeMap,
+};
 
 pub fn main() -> Result<(), anyhow::Error> {
          let filename = format!("new_record.gbk");
