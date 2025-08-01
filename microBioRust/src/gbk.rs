@@ -24,9 +24,11 @@
 //!
 //!```rust
 //! use clap::Parser;
-//! use std::fs::File;
+//! use std::{
+//!     fs::File,
+//!     io,
+//! };
 //! use microBioRust::gbk::Reader;
-//! use std::io;
 //!
 //! #[derive(Parser, Debug)]
 //! #[clap(author, version, about)]
@@ -65,11 +67,14 @@
 //!
 //!```rust
 //! use clap::Parser;
-//! use std::fs::File;
-//! use microBioRust::gbk::Reader;
-//! use std::io;
-//! use microBioRust::genbank;
-//!
+//! use std::{
+//!     fs::File,
+//!     io,
+//! };
+//! use microBioRust::{
+//!     gbk::Reader,
+//!     genbank,
+//! };
 //!
 //! #[derive(Parser, Debug)]
 //! #[clap(author, version, about)]
@@ -95,13 +100,13 @@
 //!  Example to save a provided multi- or single genbank file as a GFF file (by joining any multi-genbank)
 //!
 //! ```rust
-//!    use microBioRust::gbk::gff_write;
-//!    use microBioRust::gbk::Reader;
-//!    use microBioRust::gbk::Record;
+//!    use microBioRust::gbk::{gff_write, Reader, Record};
 //!    use std::collections::BTreeMap;
-//!    use std::fs::File;
+//!    use std::{
+//!        fs::File,
+//!        io,
+//!    };
 //!    use clap::Parser;
-//!    use std::io;
 //!
 //!   #[derive(Parser, Debug)]
 //!   #[clap(author, version, about)]
@@ -174,9 +179,7 @@
 //!
 //!
 //! ```rust
-//!    use microBioRust::gbk::gff_write;
-//!    use microBioRust::gbk::RangeValue;
-//!    use microBioRust::gbk::Record;
+//!    use microBioRust::gbk::{gff_write, RangeValue, Record};
 //!    use std::fs::File;
 //!    use std::collections::BTreeMap;
 //!
@@ -271,23 +274,21 @@
 //!```
 //!
 
-use std::io::{self, Write};
-use std::fs;
+use std::{
+	io::{self, Write},
+	fs::{self, OpenOptions, File},
+	vec::Vec,
+	str,
+	convert::{AsRef, TryInto},
+	path::Path,
+	collections::{BTreeMap, HashSet},
+};
 use regex::Regex;
 use itertools::Itertools;
-use std::vec::Vec;
-use std::str;
-use std::convert::AsRef;
 use protein_translate::translate;
-use std::path::Path;
 use bio::alphabets::dna::revcomp;
-use anyhow::anyhow;
-use std::collections::BTreeMap;
-use std::fs::{OpenOptions, File};
-use anyhow::Context;
-use std::collections::HashSet;
+use anyhow::{anyhow, Context};
 use paste::paste;
-use std::convert::TryInto;
 use chrono::prelude::*;
 
 

@@ -19,20 +19,20 @@
 //!  
 //!  Other pyfunctions that can be run include gbk_to_faa, embl_to_faa, gbk_to_gff and embl_to_gff
 
-#![allow(unused_imports)]
+
+use pyo3::{
+   prelude::*,
+   types::PyModule,
+};
+use microBioRust::genbank;
+use std::{
+   collections::BTreeMap,
+   io::{self, Write},
+   fs::OpenOptions,
+};
+use microBioRust::gbk::{Record, Reader, RangeValue, gff_write};
 use microBioRust::embl;
 use microBioRust::embl::gff_write as embl_gff_write;
-use microBioRust::gbk::gff_write;
-use microBioRust::gbk::RangeValue;
-use microBioRust::gbk::Reader;
-use microBioRust::gbk::Record;
-use microBioRust::genbank;
-use pyo3::prelude::*;
-use pyo3::types::PyModule;
-use std::collections::BTreeMap;
-use std::fs::OpenOptions;
-use std::io;
-use std::io::Write;
 
 #[pyfunction]
 fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {
