@@ -1,4 +1,4 @@
-name: microSeqIO_test
+name: microBioRust_test
 
 on:
   push:
