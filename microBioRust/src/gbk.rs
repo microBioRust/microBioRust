@@ -388,7 +388,7 @@ macro_rules! genbank {
         let mut vec = Vec::new();
         for rec in reader.records() {
             match rec {
-                Ok(r) => { println!("this is r {:?}", &r);
+                Ok(r) => { //println!("this is r {:?}", &r);
 		           vec.push(r);
 			   }
                 Err(e) => panic!("Error reading record: {:?}", e),
@@ -752,7 +752,7 @@ where
 	                 //collects the DNA sequence and translations on the correct strand
 	                 if stra == -1 {
 	                    if cod > 1 {
-			       //println!("reverse strand coding start more than one {:?}", &iterablecount);
+			       println!("reverse strand coding start more than one {:?}", &iterablecount);
 			       if sto + 1 <= record.sequence.len() {
 		                   sliced_sequence = &record.sequence[sta+cod..sto+1];
 				   }
@@ -1564,3 +1564,71 @@ impl Config {
     Ok(Config { filename })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
+    #[allow(unused_imports)]
+    fn test_read_file() {
+       println!("in testing of read file");
+       let content = std::fs::read_to_string("rhizexample.gbk").expect("error reading file");
+       assert!(content.contains("LOCUS"));
+       assert!(content.len() > 0);
+       }
+    #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
+    #[allow(unused_imports)]
+    fn test_parse_gbk() {
+       let file_gbk = "rhizexample.gbk";
+       let records = genbank!(&file_gbk);
+       assert!(records.len() > 0);
+       println!("records len is {:?}", &records.len());
+       }
+    #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
+    #[allow(unused_imports)]
+    fn test_parse_source_attributes() {
+       let file_gbk = "rhizexample.gbk";
+       let records = genbank!(&file_gbk);
+       let record = records[0].clone();
+       assert_eq!(record.id, "AM236082");
+       }
+    #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
+    #[allow(unused_imports)]
+    fn test_parse_cds_attributes() {
+       let file_gbk = "rhizexample.gbk";
+       let records = genbank!(&file_gbk);
+       let record = records[0].clone();
+       assert_eq!(record.cds.locus_tag.clone().unwrap(), "pRL80142".to_string());
+       //assert_eq!(record.cds.get_gene(&record.id).as_deref(), Some(&"trbBp8".to_string()));
+       }
+    #[test]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
+    #[allow(unused_assignments)]
+    #[allow(unused_imports)]
+    fn test_parse_sequence_attributes() {
+        let file_gbk = "rhizexample.gbk";
+	let records = genbank!(&file_gbk);
+	let record = records[0].clone();
+	let loc_tag = &record.cds.locus_tag.clone().unwrap();
+	assert_eq!(record.seq_features.get_sequence_faa(&loc_tag), Some(&"MLQSHSRLVRKLQDALGEHLCIALEDPTVVEIMLNPDGKLFIERLGHGVAPAGEMQATAAETVIGSVAHALQSEADGERPIISGELPIGGHRFEGLLPPVVNSPTFTIRRRASRLIPLDDYVTAKIMTEAQASIIRSAITNRLNIVIAGGTGSGKTTLANAVIAEIVSSAPEDRMVILEDTSEIQCAAENAVCLHTSDAVDMARLLKSTMRLRPDRIIVGEVRDGAALTLLKAWNTGHPGGVTTIHSNSAMSALRRLEQLTSEASQQPMQAVIGEAVDLVISIERAGRGRRVREVLHVEGFNGSRYQTEHYPQIDEDSHAA".to_string()));
+	}
+}
+    
