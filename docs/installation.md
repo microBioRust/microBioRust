@@ -26,7 +26,7 @@ For Linux:
 For MacOSX: 
 ```export DYLD_LIBRARY_PATH=[directory where python is located]```
 
-For Windows please see this StackOverflow issue for a fix: [fix here](https://stackoverflow.com/questions/79627918/cant-set-python-version-when-running-rust-analyzer-and-pyo3-on-wsl/79627921#79627921)
+For Windows please see this StackOverflow issue for a fix: [fix here](https://stackoverflow.com/questions/79627918/cant-set-python-version-when-running-rust-analyzer-and-pyo3-on-wsl/79627921#79627921) and please also see our specific windows_install page
 
 
 
