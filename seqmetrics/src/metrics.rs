@@ -15,7 +15,7 @@
 //! use microBioRust_seqmetrics::metrics::hydrophobicity;
 //!
 //! pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
-//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
 //!            loop {  
@@ -66,7 +66,7 @@
 //! use microBioRust_seqmetrics::metrics::molecular_weight;
 //!
 //! pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
-//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
 //!	    let mut molecular_weight_total: f64 = 0.0;
@@ -111,7 +111,7 @@
 //! use microBioRust_seqmetrics::metrics::amino_counts;
 //!
 //! pub fn count_aminos() -> Result<(), anyhow::Error> {
-//!            let file_gbk = File::open("test_output.gbk")?;
+//!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
 //!	    let mut results: HashMap<char, u64> = HashMap::new();
@@ -142,7 +142,9 @@
 //!            return Ok(());
 //!   }
 //!```
-//!  Example function to calculate and print out the aromaticity of each protein
+//!  Example function to calculate and print out the aromaticity of each protein.  You can do the equivalent but using the instability_index function for those calculations.
+//!  The instability index is from the method by Guruprasad et al., 1990. A protein with an instability index > 40 may be unstable in the test tube, whilst one < 40 is expected
+//!  to be stable.  This interpretation should be taken as a guideline only.
 //!
 //!```rust
 //! use clap::Parser;
@@ -154,7 +156,7 @@
 //!
 //! pub fn aromaticity() -> Result<(), anyhow::Error> {
 //!        // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
-//!        let file_gbk = File::open("test_output.gbk")?;
+//!        let file_gbk = File::open("K12_ribo.gbk")?;
 //!	let mut reader = Reader::new(file_gbk);
 //!	let mut records = reader.records();
 //!	let mut results: HashMap<char, f64> = HashMap::new();
@@ -376,6 +378,49 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
     result_weight
 }
 
+use tokio::io::BufReader;
+use tokio::io::AsyncBufReadExt;
+#[allow(non_snake_case)]
+#[allow(dead_code)]
+pub async fn load_instability(path: &str) -> Result<HashMap<String,f64>, anyhow::Error> {
+    let file = tokio::fs::File::open(path).await?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut weights = HashMap::new();
+    while let Some(line) = lines.next_line().await? {
+        let line = line.trim().to_string();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split(',').collect();
+        if parts.len() != 2 {
+            continue;
+        }
+        let key = parts[0].trim().to_string();
+        let val: f64 = parts[1]
+            .trim()
+            .replace('—', "-") // handle minus dash
+            .parse()
+            .unwrap();
+        weights.insert(key, val);
+    }
+    Ok(weights)
+}
+
+#[allow(non_snake_case)]
+#[allow(dead_code)]
+pub async fn instability_index(seq: String, weights: &HashMap<String, f64>) -> f64 {
+    let chars: Vec<char> = seq.chars().collect();
+    let mut total = 0.0;
+    for window in chars.windows(2) {
+       let pair = format!("{}{}", window[0], window[1]);
+       if let Some(val) = weights.get(&pair) {
+           total+=val;
+	   }
+        }
+    total
+}
+
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 pub struct Hydrophobicity {
@@ -534,7 +579,7 @@ mod tests {
     #[allow(dead_code)]
     #[allow(unused_variables)]
     pub fn suggest_transmembrane_domains() -> Result<(), anyhow::Error> {
-        let file_gbk = File::open("test_output.gbk")?;
+        let file_gbk = File::open("K12_ribo.gbk")?;
         let mut reader = Reader::new(file_gbk);
         let mut records = reader.records();
         loop {
@@ -582,7 +627,7 @@ mod tests {
     #[allow(unused_variables)]
     #[allow(unused_assignments)]
     pub fn collect_molecular_weight() -> Result<(), anyhow::Error> {
-        let file_gbk = File::open("test_output.gbk")?;
+        let file_gbk = File::open("K12_ribo.gbk")?;
         let mut reader = Reader::new(file_gbk);
         let mut records = reader.records();
         let mut molecular_weight_total: f64 = 0.0;
@@ -620,7 +665,7 @@ mod tests {
     #[allow(unused_variables)]
     #[allow(unused_assignments)]
     pub fn count_aminos() -> Result<(), anyhow::Error> {
-        let file_gbk = File::open("test_output.gbk")?;
+        let file_gbk = File::open("K12_ribo.gbk")?;
         let mut reader = Reader::new(file_gbk);
         let mut records = reader.records();
         let mut results: HashMap<char, u64> = HashMap::new();
@@ -658,7 +703,7 @@ mod tests {
     #[allow(unused_assignments)]
     pub fn aromaticity() -> Result<(), anyhow::Error> {
         // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
-        let file_gbk = File::open("test_output.gbk")?;
+        let file_gbk = File::open("K12_ribo.gbk")?;
         let reader = Reader::new(file_gbk);
         let mut records = reader.records();
         let mut results: HashMap<char, f64> = HashMap::new();
@@ -679,6 +724,45 @@ mod tests {
                                 println!(
                                     "aromaticity for {} {} is {}",
                                     &record.id, &k, &aromaticity
+                                );
+                            }
+                            _ => (),
+                        };
+                    }
+                }
+                Some(Err(e)) => {
+                    println!("theres an error {:?}", e);
+                }
+                None => {
+                    println!("finished iteration");
+                    break;
+                }
+            }
+        }
+        return Ok(());
+    }
+    use tokio::io::BufReader;
+    #[cfg(test)]
+    #[allow(dead_code)]
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    #[allow(unused_assignments)]
+    #[tokio::test]
+    pub async fn instability_test() -> Result<(), anyhow::Error> {
+        let file_gbk = File::open("K12_ribo.gbk")?;
+        let reader = Reader::new(file_gbk);
+        let mut records = reader.records();
+	let weights = load_instability("dipeptide_stability_values.csv").await?;
+        loop {
+            match records.next() {
+                Some(Ok(record)) => {
+                    for (k, _v) in &record.cds.attributes {
+                        match record.seq_features.get_sequence_faa(&k) {
+                            Some(value) => {
+                                let seq_faa = value.to_string();
+                                let result = instability_index(seq_faa, &weights).await;
+                                println!(
+                                    "instability index for {} {} is {}", &record.id, &k, &result
                                 );
                             }
                             _ => (),
