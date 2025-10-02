@@ -27,3 +27,5 @@ extension-module = ["pyo3/extension-module"]
 
 [dependencies]
 microBioRust = "0.1.2"
+microBioRust-seqmetrics = "0.1.2"
+
