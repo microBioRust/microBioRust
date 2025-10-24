@@ -1,9 +1,9 @@
 [workspace]
 members = [
-   "crates/microBioRust",
-   "crates/heatmap",
-   "crates/seqmetrics", 
-   "python/microbiorust-py"]
+   "microBioRust",
+   "heatmap",
+   "seqmetrics", 
+   "microbiorust-py"]
 resolver = "2"
 
 [profile.dev]
