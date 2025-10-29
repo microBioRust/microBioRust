@@ -16,6 +16,7 @@ Integration of common types and parsers such as:
 - [ ] fastq gzipped version parsing
 - [ ] SAM format parser
 - [ ] RPKM output parser
+- [ ] Further RNA-seq transcriptomics analysis
 - [ ] Support for other compressed files such as BAM and CRAM
 - [ ] Writer support for those types
 
