@@ -1,10 +1,9 @@
- <img src="docs/assets/MICROBIO B.svg" width=200em alt="logo" /> 
+<img src="assets/MICROBIO B.svg#gh-light-mode-only" alt="microBioRust logo light mode" width="200">
+<img src="assets/BIO W.png#gh-dark-mode-only" alt="microBioRust logo dark mode" width="200">
 
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://lcrossman.github.io/microBioRust/)
 
 ![Crates.io Version](https://img.shields.io/crates/v/microBioRust?style=flat&link=https%3A%2F%2Fcrates.io%2Fcrates%2FmicroBioRust)
-
-
 
 
 ## A Rust bioinformatics crate aimed at Microbial genomics<br>
@@ -15,6 +14,8 @@ The aim of this crate is to provide Microbiology friendly Rust functions for bio
 
 Some concepts with many thanks to Rust-bio<br>
 Please see the Roadmap for futher details [here](ROADMAP.md)
+
+Check out the [docs here](https://microBioRust.github.io/microBioRust)
 
 To install Rust - please see here [Rust install](https://www.rust-lang.org/tools/install) or with Conda<br>
 If you would like to contribute please follow the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct)
