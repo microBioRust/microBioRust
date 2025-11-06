@@ -25,6 +25,7 @@ pub fn genbank_to_faa(filename: &str) -> Result<(), anyhow::Error> {
     }
     return Ok(());
 }
+```
 
 better for debugging
 
