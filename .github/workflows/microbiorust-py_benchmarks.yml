@@ -44,12 +44,13 @@ jobs:
           if [ -d "old_pages/results" ]; then
             echo "Restoring previous benchmark results..."
             mkdir -p .asv/results
-            cp -r old_pages/results/* .asv/results/
+            cp -r old_pages/results/* microbiorust-py/.asv/results/
           else
             echo "No previous results found. Starting fresh."
           fi
 
       - name: Configure ASV
+        working-directory: microbiorust-py
         run: asv machine --machine "github-runner" --yes
 
       # 3. ADD NEW DATA POINT
@@ -73,5 +74,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .asv/html
+          publish_dir: microbiorust-py/.asv/html
           publish_branch: gh-pages
