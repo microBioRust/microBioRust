@@ -24,13 +24,14 @@ class PipelineSuite:
     # 1. Benchmark TIME
     def time_process_all(self):
         # This calls your function that returns Vec<String>
-       print("---- starting run ----")
+       print("---- starting run ----", flush=True)
+       t0 = time.time()
        result = microbiorust.gbk_to_faa(self.filepath)
-       print("finished parse")
-       counted = 0
+       t1 = time.time()
+       print(f"finished parse in {t1-t0:.4f}s", flush=True)
        for _ in result:
          pass
-       print("loop complete")
+       print("loop complete", flush=True)
 
     # 2. Benchmark MEMORY (The known spike)
     def peakmem_process_all(self):
