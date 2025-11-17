@@ -1,0 +1,33 @@
+{
+    "version": 1,
+    "project": "microbiorust-py",
+    "project_url": "https://github.com/LCrossman/microBioRust/microbiorust-py",
+    
+    // MONOREPO SETTINGS
+    // 1. The git history is one level up
+    "repo": "..",
+    // 2. The python project is inside this folder
+    "repo_subdir": "microbiorust-py",
+
+    // BUILD SETTINGS
+    // This creates a virtualenv for every test
+    "environment_type": "virtualenv",
+    "pythons": ["3.11"], 
+    "matrix": {
+        "req": {}
+    },
+
+    // Install using pip + pyproject.toml + maturin
+    "install_command": [
+        "pip install ."
+    ],
+    "uninstall_command": [
+        "pip uninstall -y {project}"
+    ],
+
+    // CONFIGURATION
+    "benchmark_dir": "benchmarks",
+    "results_dir": ".asv/results",
+    "html_dir": ".asv/html",
+    "show_commit_url": "https://github.com/LCrossman/microBioRust/microbiorust-py/commit/"
+}
