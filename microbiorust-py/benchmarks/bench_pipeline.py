@@ -9,7 +9,6 @@ class PipelineSuite:
     rounds = 1
     number = 1
     repeat = 2
-    params = [None]
     min_run_count = 1
     warmup_time = 0
     # Setup runs before the timer starts
@@ -26,11 +25,11 @@ class PipelineSuite:
     def time_process_all(self):
         # This calls your function that returns Vec<String>
        result = microbiorust.gbk_to_faa(self.filepath)
-       for r in result:
-         print(r)
+       for _ in result:
+         pass
 
     # 2. Benchmark MEMORY (The known spike)
     def peakmem_process_all(self):
         result = microbiorust.gbk_to_faa(self.filepath)
-        for r in result:
-          print(r)
+        for _ in result:
+          pass
