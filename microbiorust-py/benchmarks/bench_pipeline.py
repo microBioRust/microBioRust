@@ -5,6 +5,12 @@ class PipelineSuite:
     """
     Benchmarks for microbiorust-py
     """
+    # Setup asv parameters - suggested on ArcticDB website
+    rounds = 2
+    number = 2
+    repeat = 3
+    min_run_count = 1
+    warmup_time = 0
     # Setup runs before the timer starts
     def setup(self):
         bench_dir = os.path.dirname(__file__)
