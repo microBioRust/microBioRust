@@ -30,7 +30,7 @@ You can run
 ```bash
 cargo test
 ```
-which tests if the pyfunctions have been successfully added to the PyModule
+which is the Rust test to see if the pyfunctions have been successfully added to the PyModule
 
 Example usage in Python:
 
