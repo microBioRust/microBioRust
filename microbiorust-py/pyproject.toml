@@ -5,6 +5,7 @@ build-backend = "maturin"
 
 [project]
 name = "microbiorust-py"
+version = "0.1.2"
 # Valid python versions
 requires-python = ">=3.10"
 classifiers = [
@@ -18,6 +19,7 @@ dependencies = []
  
 # This tells Python to look at Cargo.toml for the version number.
 [tool.maturin]
+manifest-path = "Cargo.toml"
 bindings = "pyo3"
-module-name = "microbiorust_py"
+module-name = "microbiorust"
 features = ["pyo3/extension-module"]

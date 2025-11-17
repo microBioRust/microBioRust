@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "project": "microbiorust-py",
+    "project": "microbiorust",
     "project_url": "https://github.com/LCrossman/microBioRust/microbiorust-py",
     
     // MONOREPO SETTINGS
@@ -12,7 +12,7 @@
     // BUILD SETTINGS
     // This creates a virtualenv for every test
     "environment_type": "virtualenv",
-    "pythons": ["3.11"], 
+    "pythons": ["3.14"], 
     "matrix": {
         "req": {}
     },
