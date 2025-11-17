@@ -55,19 +55,21 @@ jobs:
 
       # 3. ADD NEW DATA POINT
       - name: Run Benchmarks
+        working-directory: microbiorust-py
         run: asv run HEAD^! --machine "github-runner" --show-stderr --quick
 
       # 4. GENERATE WEBSITE
       - name: Generate HTML
+        working-directory: microbiorust-py
         run: asv publish
 
       # 5. PACK NEW HISTORY INTO THE WEBSITE FOLDER (Crucial Step!)
       - name: Save results for next time
         run: |
           # Make sure the destination exists inside the HTML folder
-          mkdir -p .asv/html/results
+          mkdir -p microbiorust-py/.asv/html/results
           # Copy the accumulated JSON files (Old + New) into the publish dir
-          cp -r .asv/results/* .asv/html/results/
+          cp -r microbiorust-py/.asv/results/* microbiorust-py/.asv/html/results/
 
       # 6. UPLOAD EVERYTHING
       - name: Deploy to GitHub Pages
