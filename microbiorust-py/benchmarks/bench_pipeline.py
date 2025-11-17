@@ -1,5 +1,6 @@
 import os
 import microbiorust
+import time
 
 class PipelineSuite:
     """
@@ -29,9 +30,8 @@ class PipelineSuite:
        result = microbiorust.gbk_to_faa(self.filepath)
        t1 = time.time()
        print(f"finished parse in {t1-t0:.4f}s", flush=True)
-       for _ in result:
-         pass
-       print("loop complete", flush=True)
+       #for _ in result:
+       #  pass
 
     # 2. Benchmark MEMORY (The known spike)
     def peakmem_process_all(self):
