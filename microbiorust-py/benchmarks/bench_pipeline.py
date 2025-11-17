@@ -18,12 +18,12 @@ class PipelineSuite:
     # 1. Benchmark TIME
     def time_process_all(self):
         # This calls your function that returns Vec<String>
-       result = gbk_to_faa(self.filepath)
+       result = microbiorust.gbk_to_faa(self.filepath)
        for r in result:
          print(r)
 
     # 2. Benchmark MEMORY (The known spike)
     def peakmem_process_all(self):
-        result = gbk_to_faa(self.filepath)
+        result = microbiorust.gbk_to_faa(self.filepath)
         for r in result:
           print(r)
