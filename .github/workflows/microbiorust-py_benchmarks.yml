@@ -43,7 +43,7 @@ jobs:
         run: |
           if [ -d "old_pages/results" ]; then
             echo "Restoring previous benchmark results..."
-            mkdir -p .asv/results
+            mkdir -p microbiorust-py/.asv/results
             cp -r old_pages/results/* microbiorust-py/.asv/results/
           else
             echo "No previous results found. Starting fresh."
