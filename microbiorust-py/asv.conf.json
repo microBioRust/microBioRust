@@ -12,7 +12,8 @@
     // BUILD SETTINGS
     // This creates a virtualenv for every test
     "environment_type": "virtualenv",
-    "pythons": ["3.14"], 
+    "pythons": ["3.12"],
+    "reuse_existing_environment": true,
     "matrix": {
         "req": {}
     },
