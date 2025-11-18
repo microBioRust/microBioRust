@@ -41,10 +41,10 @@ jobs:
       # 2. PUT HISTORY WHERE ASV EXPECTS IT
       - name: Restore results
         run: |
-          if [ -d "old_pages/microBioRust/results/github-runner/" ]; then
+          if [ -d "old_pages/results/github-runner/" ]; then
             echo "Restoring previous benchmark results..."
             mkdir -p .asv/results
-            cp -r old_pages/microBioRust/results/github-runner/* .asv/results/
+            cp -r old_pages/results/github-runner/* .asv/results/
           else
             echo "No previous results found. Starting fresh."
           fi
