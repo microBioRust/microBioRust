@@ -37,8 +37,11 @@ jobs:
         with:
           ref: gh-pages
           path: old_pages
-
-      # 2. PUT HISTORY WHERE ASV EXPECTS IT
+      # set up ASV here so as to copy the history to it
+      - name: Configure ASV
+        working-directory: microbiorust-py
+        run: asv machine --machine "github-runner" --yes
+      # 2. PUT HISTORY
       - name: Restore results
         run: |
           if [ -d "old_pages/results/github-runner/" ]; then
@@ -48,10 +51,6 @@ jobs:
           else
             echo "No previous results found. Starting fresh."
           fi
-
-      - name: Configure ASV
-        working-directory: microbiorust-py
-        run: asv machine --machine "github-runner" --yes
 
       # 3. ADD NEW DATA POINT
       - name: Run Benchmarks
