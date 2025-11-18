@@ -2,7 +2,7 @@
     "version": 1,
     "project": "microbiorust",
     "project_url": "https://github.com/LCrossman/microBioRust/microbiorust-py",
-    
+    "branches": ["main"],    
     // MONOREPO SETTINGS
     // 1. The git history is one level up
     "repo": "..",
