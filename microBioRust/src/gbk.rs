@@ -363,7 +363,7 @@ macro_rules! create_builder {
 	        self.$attributes
             }
 	    // function to iterate immutably through the BTreeMap as required
-	    pub fn iter_sorted(&'_ self) -> std::collections::btree_map::Iter<String, HashSet<$enum_name>> {
+	    pub fn iter_sorted(&'_ self) -> std::collections::btree_map::Iter<'_, String, HashSet<$enum_name>> {
 	        self.$attributes.iter()
 	    }
 	    //default function
@@ -770,7 +770,7 @@ where
 			       else {
 			           sliced_sequence = &record.sequence[sta..sto];
 				   }
-			       println!("iterable count after is {:?}", &iterablecount);
+			       //println!("iterable count after is {:?}", &iterablecount);
 		               }
 	                 let cds_char = sliced_sequence;
 		         let prot_seq =  translate(&revcomp(cds_char.as_bytes()));
@@ -789,7 +789,7 @@ where
 		                  sliced_sequence = &record.sequence[sta+cod-1..sto];
 		                  }
 		              else {
-			          println!("forward strand codon value one cnt {:?}", &iterablecount);
+			          //println!("forward strand codon value one cnt {:?}", &iterablecount);
 		                  sliced_sequence = &record.sequence[sta-1..sto];
 		                  }
 		         let cds_char = sliced_sequence;
@@ -1097,7 +1097,7 @@ pub fn format_translation(translation: &str) -> String {
 	             let end = i+60 -1;
 		     let valid_end = if end >= translation.len() { &cleaned_translation.len() -1 } else { end };
                      formatted.push_str(&format!("                     {}",&cleaned_translation[i..valid_end]));
-		     println!("cleaned translation leng is {:?}", &cleaned_translation[i..valid_end].len());
+		     //println!("cleaned translation leng is {:?}", &cleaned_translation[i..valid_end].len());
 		     if *&cleaned_translation[i..valid_end].len() < 59 {
 		        formatted.push('\"');
 			}
