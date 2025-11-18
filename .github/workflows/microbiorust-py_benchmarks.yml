@@ -41,7 +41,7 @@ jobs:
       # 2. PUT HISTORY WHERE ASV EXPECTS IT
       - name: Restore results
         run: |
-          if [ -d "old_pages/results" ]; then
+          if [ -d "old_pages/microBioRust/results" ]; then
             echo "Restoring previous benchmark results..."
             mkdir -p .asv/results
             cp -r old_pages/results/* .asv/results/
