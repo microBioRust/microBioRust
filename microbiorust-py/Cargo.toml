@@ -26,6 +26,5 @@ default = []
 extension-module = ["pyo3/extension-module"]
 
 [dependencies]
-microBioRust = "0.1.2"
-microBioRust-seqmetrics = "0.1.2"
-
+microBioRust = { git = "https://github.com/LCrossman/microBioRust", branch = "main"}
+microBioRust-seqmetrics = { git = "https://github.com/LCrossman/microBioRust/seqmetrics", branch = "main" }
