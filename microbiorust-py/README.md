@@ -20,17 +20,17 @@ microBioRust is the core Rust Crate
 
 ## Installation
 
-Build the PyModule from source using `maturin` (recommended) - You will need to use the --features flag below:
+Build the PyModule from source using `maturin` (recommended) - You will need to use the --release flag below:
 
 ```bash
 pip install maturin
-maturin develop --features extension-module
+maturin develop --release
 ```
 You can run
 ```bash
 cargo test
 ```
-which is the Rust test to see if the pyfunctions have been successfully added to the PyModule
+which is the Rust test to see if the Rust pyfunctions have been successfully added to the PyModule
 
 Example usage in Python:
 
