@@ -1,21 +1,20 @@
 use microBioRust::embl::{gbk_write, gff_write, RangeValue, Record};
 use std::collections::BTreeMap;
 
-
- /// Test to create a new record
-     /// We require a source, features, sequence features and a sequence
-     /// The source is top level, a single genbank file has one source, multi-genbank has one per contig
-     /// The SourceAttributes construct has a name (counter), start, stop, organism, moltype, strain, type material and db_xref
-     /// The FeatureAttributes construct has a locus tag (counter), gene, product, start, stop, codon start, strand
-     /// SourceAttribute start and stop are the coordinates of the source feature or per contig, FeatureAttributes start and stop are per coding sequence (CDS)
-     /// The SequenceAttributes construct has a locus tag (counter), start, stop, sequence_ffn, sequence_faa, codon start, and strand
-     /// SequenceAttribute start and stop, codon start and strand are duplicates of those in the FeatureAttributes
-     /// To add an entry requires using the set_ values such as set_start, set_stop, set_counter, set_strand
-     /// To write in GFF format requires gff_write(seq_region, record_vec, filename and true/false
-     /// The seq_region is the region of interest with name and DNA coordinates such as ``` "source_1".to_string(), (1,897) ```
-     /// record_vec is a list of the records.  If there is only one record ``` vec![record] ``` will suffice
-     /// filename is the required filename string, true/false is whether the DNA sequence should be included in the GFF3 file
-     /// Some GFF3 files have the DNA sequence, whilst others do not.  Some tools require the DNA sequence included.
+/// Test to create a new record
+/// We require a source, features, sequence features and a sequence
+/// The source is top level, a single genbank file has one source, multi-genbank has one per contig
+/// The SourceAttributes construct has a name (counter), start, stop, organism, moltype, strain, type material and db_xref
+/// The FeatureAttributes construct has a locus tag (counter), gene, product, start, stop, codon start, strand
+/// SourceAttribute start and stop are the coordinates of the source feature or per contig, FeatureAttributes start and stop are per coding sequence (CDS)
+/// The SequenceAttributes construct has a locus tag (counter), start, stop, sequence_ffn, sequence_faa, codon start, and strand
+/// SequenceAttribute start and stop, codon start and strand are duplicates of those in the FeatureAttributes
+/// To add an entry requires using the set_ values such as set_start, set_stop, set_counter, set_strand
+/// To write in GFF format requires gff_write(seq_region, record_vec, filename and true/false
+/// The seq_region is the region of interest with name and DNA coordinates such as ``` "source_1".to_string(), (1,897) ```
+/// record_vec is a list of the records.  If there is only one record ``` vec![record] ``` will suffice
+/// filename is the required filename string, true/false is whether the DNA sequence should be included in the GFF3 file
+/// Some GFF3 files have the DNA sequence, whilst others do not.  Some tools require the DNA sequence included.
 
 #[test]
 fn create_new_record() -> Result<(), anyhow::Error> {
@@ -113,7 +112,8 @@ gccttcggtaacaccgataaccattgagttcagcagggcacgcgcggtaccagcctgtgc
 ccaaccgtctgcgtaaccatcacgcggaccgaaggtcagggtattatctgcatgtttaac
 ttcaacagcatcgttgagagtacgagtcagctcgccgtttttacctttgatcgtaataac
 ctgaccgttgatttttacgtcaacgccggcaggaacaacgaccggtgctttagcaacacg
-agacattttttcc".to_string();
+agacattttttcc"
+        .to_string();
     gff_write(
         seq_region.clone(),
         vec![record.clone()],
