@@ -12,11 +12,11 @@ fn main() -> Result<(), anyhow::Error> {
     let args = Arguments::parse();
     let records = genbank!(&args.filename);
     for record in records.iter() {
-        for (k, _v) in &record.cds.attributes {
+        for k in record.cds.attributes.keys() {
             if let Some(seq) = record.seq_features.get_sequence_faa(k) {
                 println!(">{}|{}\n{}", &record.id, &k, seq);
             }
         }
     }
-    return Ok(());
+    Ok(())
 }
