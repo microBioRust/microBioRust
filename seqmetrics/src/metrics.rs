@@ -378,11 +378,11 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
     result_weight
 }
 
-use tokio::io::BufReader;
 use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
-pub async fn load_instability(path: &str) -> Result<HashMap<String,f64>, anyhow::Error> {
+pub async fn load_instability(path: &str) -> Result<HashMap<String, f64>, anyhow::Error> {
     let file = tokio::fs::File::open(path).await?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
@@ -413,11 +413,11 @@ pub async fn instability_index(seq: String, weights: &HashMap<String, f64>) -> f
     let chars: Vec<char> = seq.chars().collect();
     let mut total = 0.0;
     for window in chars.windows(2) {
-       let pair = format!("{}{}", window[0], window[1]);
-       if let Some(val) = weights.get(&pair) {
-           total+=val;
-	   }
+        let pair = format!("{}{}", window[0], window[1]);
+        if let Some(val) = weights.get(&pair) {
+            total += val;
         }
+    }
     total
 }
 
@@ -752,7 +752,7 @@ mod tests {
         let file_gbk = File::open("K12_ribo.gbk")?;
         let reader = Reader::new(file_gbk);
         let mut records = reader.records();
-	let weights = load_instability("dipeptide_stability_values.csv").await?;
+        let weights = load_instability("dipeptide_stability_values.csv").await?;
         loop {
             match records.next() {
                 Some(Ok(record)) => {
@@ -762,7 +762,8 @@ mod tests {
                                 let seq_faa = value.to_string();
                                 let result = instability_index(seq_faa, &weights).await;
                                 println!(
-                                    "instability index for {} {} is {}", &record.id, &k, &result
+                                    "instability index for {} {} is {}",
+                                    &record.id, &k, &result
                                 );
                             }
                             _ => (),
