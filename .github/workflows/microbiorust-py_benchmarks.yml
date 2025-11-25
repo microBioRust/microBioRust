@@ -44,10 +44,10 @@ jobs:
       # 2. PUT HISTORY
       - name: Restore results
         run: |
-          if [ -d "old_pages/results/github-runner/" ]; then
+          if [ -d "old_pages/results" ]; then
             echo "Restoring previous benchmark results..."
-            mkdir -p microbiorust-py/.asv/results/github-runner/
-            rsync -av old_pages/results/github-runner/ microbiorust-py/.asv/results/github-runner/
+            mkdir -p microbiorust-py/.asv/results
+            rsync -av old_pages/results/ microbiorust-py/.asv/results/
           else
             echo "No previous results found. Starting fresh."
           fi
@@ -66,9 +66,9 @@ jobs:
       - name: Save results for next time
         run: |
           # Make sure the destination exists inside the HTML folder
-          mkdir -p microbiorust-py/.asv/html/results/github-runner/
+          mkdir -p microbiorust-py/.asv/html/results/
           # Copy the accumulated JSON files (Old + New) into the publish dir
-          rsync -av microbiorust-py/.asv/results/github-runner/ microbiorust-py/.asv/html/results/
+          rsync -av microbiorust-py/.asv/results/ microbiorust-py/.asv/html/results/
 
       # 6. UPLOAD EVERYTHING
       - name: Deploy to GitHub Pages
