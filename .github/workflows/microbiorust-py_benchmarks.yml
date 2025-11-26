@@ -57,7 +57,7 @@ jobs:
           fi
           if [ -d "old_pages/results/github-runner/" ]; then
              echo "restoring results from old_pages/results/github-runner"
-             mkdir -p "$ASV_MACHINE_RESULTS_DIR}"
+             mkdir -p "${ASV_MACHINE_RESULTS_DIR}"
              rsync -av old_pages/results/github-runner/ "${ASV_MACHINE_RESULTS_DIR}"
           else
              echo "No machine specific results found"
