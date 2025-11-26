@@ -44,12 +44,23 @@ jobs:
       # 2. PUT HISTORY
       - name: Restore results
         run: |
+        #there were difficulties with a subfolder being created sometimes
+          ASV_ROOT_RESULTS_DIR="microbiorust-py/.asv/results/"
+          ASV_MACHINE_RESULTS_DIR="microbiorust-py/.asv/results/github-runner/"
+          
           if [ -d "old_pages/results" ]; then
-            echo "Restoring previous benchmark results..."
-            mkdir -p microbiorust-py/.asv/results
-            rsync -av old_pages/results/ microbiorust-py/.asv/results/
+            echo "Restoring previous benchmark results from old_pages/results..."
+            mkdir -p "${ASV_ROOT_RESULTS_DIR}"
+            rsync -av old_pages/results/ "${ASV_ROOT_RESULTS_DIR}"
           else
             echo "No previous results found. Starting fresh."
+          fi
+          if [ -d "old_pages/results/github-runner/" ]; then
+             echo "restoring results from old_pages/results/github-runner"
+             mkdir -p "$ASV_MACHINE_RESULTS_DIR}"
+             rsync -av old_pages/results/github-runner/ "${ASV_MACHINE_RESULTS_DIR}"
+          else
+             echo "No machine specific results found"
           fi
 
       # 3. ADD NEW DATA POINT
