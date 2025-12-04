@@ -43,7 +43,7 @@ use microBioRust_seqmetrics::metrics::amino_counts as rust_amino_counts;
 use microBioRust_seqmetrics::metrics::amino_percentage as rust_amino_percentage;
 
 #[pyfunction]
-fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {
+fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {  
     let records = genbank!(&filename);
     let mut result = Vec::new();
     for record in records {
@@ -54,6 +54,18 @@ fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {
         }
     }
     Ok(result)
+}
+
+#[pyfunction]
+fn gbk_to_faa_count(filename: &str) -> PyResult<usize> {
+    let records = genbank!(filename);
+    let mut count = 0;
+    for record in records {
+        for (k, _) in &record.cds.attributes {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
 #[pyfunction]
@@ -188,6 +200,7 @@ fn amino_counts(seq: &str) -> HashMap<char, u64> {
 #[pymodule]
 fn microbiorust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(gbk_to_faa, m)?)?;
+    m.add_function(wrap_pyfunction!(gbk_to_faa_count, m)?)?;
     m.add_function(wrap_pyfunction!(embl_to_faa, m)?)?;
     m.add_function(wrap_pyfunction!(gbk_to_gff, m)?)?;
     m.add_function(wrap_pyfunction!(embl_to_gff, m)?)?;
@@ -209,7 +222,15 @@ mod tests {
         Python::with_gil(|py| {
             let m = PyModule::new(py, "microbiorust").unwrap();
             microbiorust(py, &m).unwrap();
-            for func in &["gbk_to_faa", "embl_to_faa", "gbk_to_gff", "embl_to_gff", "hydrophobicity", "amino_counts", "amino_percentage"] {
+            for func in &["gbk_to_faa", 
+                          "gbk_to_faa_count",
+                          "embl_to_faa", 
+                          "gbk_to_gff", 
+                          "embl_to_gff", 
+                          "hydrophobicity", 
+                          "amino_counts", 
+                          "amino_percentage"
+                      ] {
                 assert!(m.getattr(func).is_ok(), "Function {} not found", func);
             }
         });
