@@ -1,0 +1,80 @@
+name: Run Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pip install asv virtualenv maturin
+
+      # 1. GET OLD HISTORY
+      - name: Load previous results
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: old_pages
+      # set up ASV here so as to copy the history to it
+      - name: Configure ASV
+        working-directory: microbiorust-py
+        run: asv machine --machine "github-runner" --yes
+      # 2. PUT HISTORY
+      - name: Restore results
+        run: |
+          if [ -d "old_pages/results/github-runner/" ]; then
+            echo "Restoring previous benchmark results..."
+            mkdir -p microbiorust-py/.asv/results/github-runner/
+            cp -r old_pages/results/github-runner/* microbiorust-py/.asv/results/github-runner/
+          else
+            echo "No previous results found. Starting fresh."
+          fi
+
+      # 3. ADD NEW DATA POINT
+      - name: Run Benchmarks
+        working-directory: microbiorust-py
+        run: asv run HEAD^! --machine "github-runner" --show-stderr
+
+      # 4. GENERATE WEBSITE
+      - name: Generate HTML
+        working-directory: microbiorust-py
+        run: asv publish
+
+      # 5. PACK NEW HISTORY INTO THE WEBSITE FOLDER (Crucial Step!)
+      - name: Save results for next time
+        run: |
+          # Make sure the destination exists inside the HTML folder
+          mkdir -p microbiorust-py/.asv/html/results
+          # Copy the accumulated JSON files (Old + New) into the publish dir
+          cp -r microbiorust-py/.asv/results/* microbiorust-py/.asv/html/results/
+
+      # 6. UPLOAD EVERYTHING
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: microbiorust-py/.asv/html
+          publish_branch: gh-pages
+
