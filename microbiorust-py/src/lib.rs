@@ -23,23 +23,27 @@
 //!  result = amino_percentage("MSNTQKKNVPELRFPGFEGEWEEKKLGDLTTKIGSGKTPKGGSENYTNKGIPFLRSQNIRNGKLNLNDLVYISKDIDDEMKNSRTY")
 //!  print(result)
 
-use microBioRust::embl;
-use microBioRust::embl::gff_write as embl_gff_write;
-use microBioRust::gbk::{gff_write, RangeValue, Reader, Record};
+
+use pyo3::{
+   prelude::*,
+   types::PyModule,
+};
 use microBioRust::genbank;
-use microBioRust_seqmetrics::metrics::amino_counts as rust_amino_counts;
-use microBioRust_seqmetrics::metrics::amino_percentage as rust_amino_percentage;
-use microBioRust_seqmetrics::metrics::hydrophobicity as rust_hydrophobicity;
-use pyo3::{prelude::*, types::PyModule};
 use std::collections::HashMap;
 use std::{
-    collections::BTreeMap,
-    fs::OpenOptions,
-    io::{self, Write},
+   collections::BTreeMap,
+   io::{self, Write},
+   fs::OpenOptions,
 };
+use microBioRust::gbk::{Record, Reader, RangeValue, gff_write};
+use microBioRust::embl;
+use microBioRust::embl::gff_write as embl_gff_write;
+use microBioRust_seqmetrics::metrics::hydrophobicity as rust_hydrophobicity;
+use microBioRust_seqmetrics::metrics::amino_counts as rust_amino_counts;
+use microBioRust_seqmetrics::metrics::amino_percentage as rust_amino_percentage;
 
 #[pyfunction]
-fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {
+fn gbk_to_faa(filename: &str) -> PyResult<Vec<String>> {  
     let records = genbank!(&filename);
     let mut result = Vec::new();
     for record in records {
@@ -181,7 +185,7 @@ fn hydrophobicity(seq: &str, window_size: usize) -> Vec<f64> {
 #[allow(unused_imports)]
 #[allow(unused_variables)]
 #[pyfunction]
-fn amino_percentage(seq: &str) -> HashMap<char, f64> {
+fn amino_percentage(seq: &str) -> HashMap<char,f64> {
     rust_amino_percentage(seq)
 }
 
@@ -191,6 +195,7 @@ fn amino_percentage(seq: &str) -> HashMap<char, f64> {
 fn amino_counts(seq: &str) -> HashMap<char, u64> {
     rust_amino_counts(seq)
 }
+
 
 #[pymodule]
 fn microbiorust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -205,6 +210,7 @@ fn microbiorust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+
 #[cfg(test)]
 mod tests {
     use crate::microbiorust;
@@ -216,18 +222,18 @@ mod tests {
         Python::with_gil(|py| {
             let m = PyModule::new(py, "microbiorust").unwrap();
             microbiorust(py, &m).unwrap();
-            for func in &[
-                "gbk_to_faa",
-                "gbk_to_faa_count",
-                "embl_to_faa",
-                "gbk_to_gff",
-                "embl_to_gff",
-                "hydrophobicity",
-                "amino_counts",
-                "amino_percentage",
-            ] {
+            for func in &["gbk_to_faa", 
+                          "gbk_to_faa_count",
+                          "embl_to_faa", 
+                          "gbk_to_gff", 
+                          "embl_to_gff", 
+                          "hydrophobicity", 
+                          "amino_counts", 
+                          "amino_percentage"
+                      ] {
                 assert!(m.getattr(func).is_ok(), "Function {} not found", func);
             }
         });
     }
+    
 }
