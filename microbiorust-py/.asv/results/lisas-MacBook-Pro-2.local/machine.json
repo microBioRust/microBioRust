@@ -1,0 +1,9 @@
+{
+    "arch": "arm64",
+    "cpu": "Apple M2 Max",
+    "machine": "lisas-MacBook-Pro-2.local",
+    "num_cpu": "12",
+    "os": "Darwin 22.6.0",
+    "ram": "68719476736",
+    "version": 1
+}
