@@ -1,6 +1,7 @@
 //! # A Genbank to GFF parser
 //!
 //!
+//!
 //! You are able to parse genbank and save as a GFF (gff3) format as well as extracting DNA sequences, gene DNA sequences (ffn) and protein fasta sequences (faa)
 //!
 //! You can also create new records and save as a genbank (gbk) format
