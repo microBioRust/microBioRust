@@ -44,7 +44,7 @@ jobs:
       # 2. PUT HISTORY
       - name: Restore results
         run: |
-        #there were difficulties with a subfolder being created sometimes
+          #there were difficulties with a subfolder being created sometimes
           ASV_ROOT_RESULTS_DIR="microbiorust-py/.asv/results/"
           ASV_MACHINE_RESULTS_DIR="microbiorust-py/.asv/results/github-runner/"
           
