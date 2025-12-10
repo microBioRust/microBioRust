@@ -1,7 +1,7 @@
 {
     "version": 1,
     "project": "microbiorust",
-    "project_url": "https://github.com/microBioRust/microBioRust/microbiorust-py",
+    "project_url": "https://github.com/LCrossman/microBioRust/microbiorust-py",
     "branches": ["main"],    
     // MONOREPO SETTINGS - altered to run inside microbiorust-py
     // 1. The git history is one level up
@@ -30,5 +30,5 @@
     "benchmark_dir": "benchmarks",
     "results_dir": ".asv/results",
     "html_dir": ".asv/html",
-    "show_commit_url": "https://github.com/microBioRust/microBioRust/microbiorust-py/commit/"
+    "show_commit_url": "https://github.com/LCrossman/microBioRust/microbiorust-py/commit/"
 }

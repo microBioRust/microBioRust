@@ -44,12 +44,23 @@ jobs:
       # 2. PUT HISTORY
       - name: Restore results
         run: |
-          if [ -d "old_pages/results/github-runner/" ]; then
-            echo "Restoring previous benchmark results..."
-            mkdir -p microbiorust-py/.asv/results/github-runner/
-            cp -r old_pages/results/github-runner/* microbiorust-py/.asv/results/github-runner/
+          #there were difficulties with a subfolder being created sometimes
+          ASV_ROOT_RESULTS_DIR="microbiorust-py/.asv/results/"
+          ASV_MACHINE_RESULTS_DIR="microbiorust-py/.asv/results/github-runner/"
+          
+          if [ -d "old_pages/results" ]; then
+            echo "Restoring previous benchmark results from old_pages/results..."
+            mkdir -p "${ASV_ROOT_RESULTS_DIR}"
+            rsync -av old_pages/results/ "${ASV_ROOT_RESULTS_DIR}"
           else
             echo "No previous results found. Starting fresh."
+          fi
+          if [ -d "old_pages/results/github-runner/" ]; then
+             echo "restoring results from old_pages/results/github-runner"
+             mkdir -p "${ASV_MACHINE_RESULTS_DIR}"
+             rsync -av old_pages/results/github-runner/ "${ASV_MACHINE_RESULTS_DIR}"
+          else
+             echo "No machine specific results found"
           fi
 
       # 3. ADD NEW DATA POINT
@@ -66,9 +77,9 @@ jobs:
       - name: Save results for next time
         run: |
           # Make sure the destination exists inside the HTML folder
-          mkdir -p microbiorust-py/.asv/html/results
+          mkdir -p microbiorust-py/.asv/html/results/
           # Copy the accumulated JSON files (Old + New) into the publish dir
-          cp -r microbiorust-py/.asv/results/* microbiorust-py/.asv/html/results/
+          rsync -av microbiorust-py/.asv/results/ microbiorust-py/.asv/html/results/
 
       # 6. UPLOAD EVERYTHING
       - name: Deploy to GitHub Pages
@@ -77,4 +88,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: microbiorust-py/.asv/html
           publish_branch: gh-pages
-

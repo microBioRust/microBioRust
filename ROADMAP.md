@@ -24,12 +24,12 @@ Integration of common types and parsers such as:
 Protein parameters such as: 
 - [x] Hydrophobicity
 - [x] Molecular weight
-- [ ]  Counted amino acids & as percentage
+- [x]  Counted amino acids & as percentage
 - [x] Aromaticity
 - [ ]  Parsing phylogenetic trees 
 - [ ]  Parsing multiple sequence alignments
 - [ ]  Methylation data parsing
-- [ ]  Consider pyo3 integration
+- [x]  pyo3 integration
 
 **Testing - bioinformatics**
 - [ ] Testing & updating parsers with various edge case files such as gbk with the CONTIG(JOIN) structure
