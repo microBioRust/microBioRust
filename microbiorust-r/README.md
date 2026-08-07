@@ -18,4 +18,11 @@ You can install the development version of `microbiorustr` from GitHub using the
 
 ```r
 # install.packages("devtools")
-devtools::install_github("LCrossman/microBioRust", subdir = "microbiorust-r")
+devtools::install_github("LCrossman/microBioRust", subdir = "microbiorust-r") 
+
+## RUNNING on MacOSX - fix (works also if your R is inside a conda environment)
+You may need to alter the path in the ~/.Renviron to include rust build flags
+Provide the path to lib (PATH_TO_LIB below) which is above R/lib, so your R dylib is inside folder: PATH_TO_LIB/R/lib/
+
+If you have no ~/.Renviron: you can add a new file just containing this line 
+RUSTFLAGS="-C link-arg=-Wl,-rpath,PATH_TO_LIB -C link-arg=-Wl,-rpath,PATH_TO_LIB" 
