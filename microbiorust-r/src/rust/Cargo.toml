@@ -1,0 +1,14 @@
+[workspace]
+
+[package]
+name = "microbiorustr"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+once_cell = "1.21.4"
+extendr-api = "0.9"
+microBioRust-seqmetrics = { path = "../../../seqmetrics" }

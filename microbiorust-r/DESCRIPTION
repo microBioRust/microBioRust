@@ -1,0 +1,23 @@
+Package: microbiorustr
+Title: R Bindings for microBioRust
+Version: 0.1.0
+Authors@R: 
+    person("Lisa", "Crossman", 
+           email = "lisa.crossman@gmail.com", 
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-2390-4750"))
+Description: R bindings for the microBioRust bioinformatics library, providing
+    access to high-performance Rust implementations of microbial genomics and
+    sequence analysis tools.
+License: MIT + file LICENSE
+Encoding: UTF-8
+SystemRequirements: Cargo (Rust's package manager), rustc
+URL: https://github.com/LCrossman/microBioRust
+BugReports: https://github.com/LCrossman/microBioRust/issues
+Config/rextendr/version: 0.5.0
+Depends: 
+    R (>= 4.2)
+Config/roxygen2/version: 8.1.0
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
