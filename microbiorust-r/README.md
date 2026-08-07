@@ -1,6 +1,5 @@
 # microbiorustr
 
-[![R-CMD-check](https://github.com/LCrossman/microBioRust/microbiorustr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/LCrossman/microBioRust/microbiorustr/actions/workflows/R-CMD-check.yaml)
 
 **microbiorustr** is an R package that provides lightning-fast protein sequence metrics. It serves as a direct R interface to the Rust `seqmetrics` crate (part of the broader `microBioRust` ecosystem), bridging the performance and memory safety of Rust with the data science ecosystem of R using `extendr`.
 
