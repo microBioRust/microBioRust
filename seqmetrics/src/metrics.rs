@@ -18,29 +18,28 @@
 //!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
-//!            loop {  
-//!                match records.next() {  
+//!            loop {
+//!                match records.next() {
 //!                    Some(Ok(mut record)) => {
 //!                       //println!("next record");
 //!                       //println!("Record id: {:?}", record.id);
 //!                       for (k, v) in &record.cds.attributes {
 //!                           match record.seq_features.get_sequence_faa(&k) {
 //!                                     Some(value) => { let seq_faa = value.to_string();
-//!				                      println!("{:?}", &seq_faa);
-//!				                      let hydro_values = hydrophobicity(&seq_faa, 21);
-//!						      let mut result = String::new();
-//!						      for hydro in hydro_values {
-//!						           if hydro > 1.6 {
-//!						               println!("possible transmembrane region - score {}",&hydro);  
-//!							       }
-//!						           else {
-//!						               ()
-//!							   }
-//!						      }
-//!                                                 },
+//!                                     println!("{:?}", &seq_faa);
+//!                                     let hydro_values = hydrophobicity(&seq_faa, 21);
+//!                                     let mut result = String::new();
+//!                                     for hydro in hydro_values {
+//!                                         if hydro > 1.6 {
+//!                                             println!("possible transmembrane region - score {}",&hydro);
+//!                                         }
+//!                                         else {
+//!                                             ()
+//!                                         }
+//!                                     }
+//!                                     },
 //!                                     _ => (),
 //!                                     };
-//!                       
 //!                           }
 //!                    },
 //!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
@@ -52,7 +51,7 @@
 //!               }
 //!            return Ok(());
 //!   }
-//!```   
+//!```
 //!
 //!   Example function to calculate the molecular weight of a protein sequence
 //!
@@ -69,9 +68,9 @@
 //!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
-//!	    let mut molecular_weight_total: f64 = 0.0;
-//!            loop {  
-//!                match records.next() {  
+//!            let mut molecular_weight_total: f64 = 0.0;
+//!            loop {
+//!                match records.next() {
 //!                    Some(Ok(mut record)) => {
 //!                       //println!("next record");
 //!                       //println!("Record id: {:?}", record.id);
@@ -79,13 +78,13 @@
 //!                           match record.seq_features.get_sequence_faa(&k) {
 //!                                     Some(value) => {
 //!                                                     let seq_faa = value.to_string();
-//!				                        println!("id: {:?}", &k);
-//!				                        molecular_weight_total = molecular_weight(&seq_faa);
+//!                                                     println!("id: {:?}", &k);
+//!                                                     molecular_weight_total = molecular_weight(&seq_faa);
 //!                                                     println!(">{}|{}\n{}", &record.id, &k, molecular_weight_total);
-//!                                                    },
+//!                                                     },
 //!                                     _ => (),
 //!                                     };
-//!                       
+//!
 //!                           }
 //!                    },
 //!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
@@ -114,22 +113,21 @@
 //!            let file_gbk = File::open("K12_ribo.gbk")?;
 //!            let mut reader = Reader::new(file_gbk);
 //!            let mut records = reader.records();
-//!	    let mut results: HashMap<char, u64> = HashMap::new();
-//!            loop {  
-//!                match records.next() {  
+//!            let mut results: HashMap<char, u64> = HashMap::new();
+//!            loop {
+//!                match records.next() {
 //!                   Some(Ok(mut record)) => {
 //!                       //println!("next record");
 //!                       //println!("Record id: {:?}", record.id);
 //!                       for (k, v) in &record.cds.attributes {
 //!                           match record.seq_features.get_sequence_faa(&k) {
-//!                                     Some(value) => { let seq_faa = value.to_string();
-//!				                      println!("id: {:?}", &k);
-//!				                      results = amino_counts(&seq_faa);
-//!                                                      println!(">{}|{}\n{:?}", &record.id, &k, results);
-//!                                                      },
-//!                                     _ => (),
+//!                                Some(value) => { let seq_faa = value.to_string();
+//!                                     println!("id: {:?}", &k);
+//!                                     results = amino_counts(&seq_faa);
+//!                                     println!(">{}|{}\n{:?}", &record.id, &k, results);
+//!                                     },
+//!                                _ => (),
 //!                                     };
-//!                       
 //!                           }
 //!                    },
 //!                    Some(Err(e)) => { println!("theres an err {:?}", e); },
@@ -157,35 +155,35 @@
 //! pub fn aromaticity() -> Result<(), anyhow::Error> {
 //!        // calculated as in biopython with aromaticity according to Lobry, 1994 as the relative freq of Phe+Trp+Tyr
 //!        let file_gbk = File::open("K12_ribo.gbk")?;
-//!	let mut reader = Reader::new(file_gbk);
-//!	let mut records = reader.records();
-//!	let mut results: HashMap<char, f64> = HashMap::new();
-//!	loop {
-//!	   match records.next() {
-//!	      Some(Ok(mut record)) => {
-//!	          for (k, v) in &record.cds.attributes {
-//!		     match record.seq_features.get_sequence_faa(&k) {
-//!		         Some(value) => {  let seq_faa = value.to_string();
-//!			                   results = amino_percentage(&seq_faa);
-//!					   let aromatic_aas = vec!['Y','W','F'];
-//!					   let aromaticity: f64 = aromatic_aas.iter()
-//!					       .filter_map(|&amino| results.get(&amino))
-//!					       .map(|&perc| perc / 100.0)
-//!					       .sum();
-//!					   println!("aromaticity for {} {} is {}",&record.id, &k, &aromaticity);
-//!					  },
-//!			_ => (),
-//!			};
-//!		   }
-//!	         },
-//!	    Some(Err(e)) => { println!("theres an error {:?}", e); },
-//!	    None => {
-//!                   println!("finished iteration");
-//!	              break;
-//!		    },
-//!	    }
-//!       }
-//!      return Ok(());
+//! let mut reader = Reader::new(file_gbk);
+//! let mut records = reader.records();
+//! let mut results: HashMap<char, f64> = HashMap::new();
+//! loop {
+//!   match records.next() {
+//!     Some(Ok(mut record)) => {
+//!       for (k, v) in &record.cds.attributes {
+//!         match record.seq_features.get_sequence_faa(&k) {
+//!           Some(value) => {  let seq_faa = value.to_string();
+//!             results = amino_percentage(&seq_faa);
+//!             let aromatic_aas = vec!['Y','W','F'];
+//!             let aromaticity: f64 = aromatic_aas.iter()
+//!               .filter_map(|&amino| results.get(&amino))
+//!               .map(|&perc| perc / 100.0)
+//!               .sum();
+//!             println!("aromaticity for {} {} is {}",&record.id, &k, &aromaticity);
+//!           },
+//!           _ => (),
+//!           };
+//!         }
+//!     },
+//!     Some(Err(e)) => { println!("theres an error {:?}", e); },
+//!     None => {
+//!               println!("finished iteration");
+//!               break;
+//!           },
+//!      }
+//!      }
+//!      Ok(())
 //!   }
 //!```
 //!  The purpose of hamming.rs is to allow calculations of the hamming distances between sequences
@@ -194,7 +192,7 @@
 //!  It does not encompass or take into account any biology
 //!  It is named after the American Mathematician Richard Hamming (wikipedia)
 //!  This is aimed essentially at protein fasta sequences
-//!  
+//!
 //!
 //!  ```
 //!  use microBioRust_seqmetrics::hamming::hamming_matrix;
@@ -210,20 +208,19 @@
 //!  async fn main() -> Result<(), anyhow::Error> {
 //!            let reader = fasta::Reader::new(std::io::stdin());
 //!            let records: Vec<_> = reader.records().collect::<Result<_, _>>()?;
-//!	    println!("gathering records");
+//!            println!("gathering records");
 //!            let sequences: Vec<String> = records
-//!	                          .iter()
-//!				  .map(|rec| String::from_utf8_lossy(rec.seq()).to_string())
-//!				  .collect();
+//!               .iter()
+//!               .map(|rec| String::from_utf8_lossy(rec.seq()).to_string())
+//!               .collect();
 //!            let ids: Vec<String> = records
-//!	                          .iter()
-//!				  .map(|rec| rec.id().to_string())
-//!				  .collect();
-//!	    println!("gathered ids");
-//!	    let distances = hamming_matrix(&sequences).await?;
-//!	    write_distances_csv(ids, distances, "hamming_dists.csv").await?;
-//!
-//!         Ok(())
+//!               .iter()
+//!               .map(|rec| rec.id().to_string())
+//!               .collect();
+//!            println!("gathered ids");
+//!            let distances = hamming_matrix(&sequences).await?;
+//!            write_distances_csv(ids, distances, "hamming_dists.csv").await?;
+//!            Ok(())
 //!  }
 //!  ```
 
@@ -374,8 +371,7 @@ pub fn molecular_weight(protein_seq: &str) -> f64 {
             _ => continue,
         }
     }
-    let result_weight = total_weight - ((protein_seq.len() - 1) as f64 * 18.02);
-    result_weight
+    total_weight - ((protein_seq.len() - 1) as f64 * 18.02)
 }
 
 use tokio::io::AsyncBufReadExt;
@@ -559,12 +555,12 @@ pub fn amino_counts(protein_seq: &str) -> HashMap<char, u64> {
 pub fn amino_percentage(protein_seq: &str) -> HashMap<char, f64> {
     let mut percentages: HashMap<char, f64> = HashMap::new();
     let counts = amino_counts(protein_seq);
-    let seq_len: f64 = (protein_seq.len() as f64) as f64;
+    let seq_len: f64 = protein_seq.len() as f64;
     percentages = counts
         .iter()
         .map(|(k, &value)| {
             let percentage = (value as f64 / seq_len) * 100.0;
-            (k.clone(), percentage)
+            (*k, percentage)
         })
         .collect();
     percentages

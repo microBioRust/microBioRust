@@ -15,7 +15,7 @@ pub fn hamming_distance(seq1: &str, seq2: &str) -> usize {
         .count()
 }
 
-pub async fn hamming_matrix(sequences: &Vec<String>) -> Result<Vec<Vec<usize>>, anyhow::Error> {
+pub async fn hamming_matrix(sequences: &[String]) -> Result<Vec<Vec<usize>>, anyhow::Error> {
     assert!(
         sequences.windows(2).all(|w| w[0].len() == w[1].len()),
         "all sequences must be the same length, i.e an alignment"

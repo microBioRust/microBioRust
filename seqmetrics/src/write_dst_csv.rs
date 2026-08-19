@@ -18,7 +18,7 @@ pub async fn write_distances_csv(
     writer.write_all(header.as_bytes()).await?;
     // Write each row
     for (i, row) in distances.iter().enumerate() {
-        let mut line = format!("{}", ids[i]);
+        let mut line = ids[i].to_string();
         for val in row {
             line.push_str(&format!(",{:.3}", val));
         }
