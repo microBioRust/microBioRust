@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 //! # A Genbank to GFF parser
 //!
 //!
