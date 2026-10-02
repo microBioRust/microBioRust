@@ -1,4 +1,4 @@
-use microBioRust::embl::{gbk_write, gff_write, RangeValue, Record};
+use microBioRust::embl::{RangeValue, Record, gbk_write, gff_write};
 use std::collections::BTreeMap;
 
 /// Test to create a new record

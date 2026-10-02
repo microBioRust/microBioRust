@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use microBioRust::blast::{stream_outfmt6_to_json, AsyncBlastXmlIter};
+use microBioRust::blast::{AsyncBlastXmlIter, stream_outfmt6_to_json};
 use std::io::Cursor;
 use tokio::io::BufReader;
 
@@ -7,7 +7,7 @@ use tokio::io::BufReader;
 /// There are parsers available for two formats, -outfmt 5 (XML)
 /// and -outfmt 6 (single line tabular)
 /// the tests include a json format writer for a outfmt 6 line
-/// and a reader and parser for XML format 5 
+/// and a reader and parser for XML format 5
 
 // Unit tests (async if relevant)
 #[cfg(test)]
@@ -15,7 +15,7 @@ mod tests {
     use super::*;
     use std::io::Write;
     use tokio::io::BufReader as TokioBufReader;
-    
+
     #[tokio::test]
     async fn test_stream_tab_to_json() {
         let data = "q1	h1	99.0	10	0	0	1	10	1	10	1e-5	50

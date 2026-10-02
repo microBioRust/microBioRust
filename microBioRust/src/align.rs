@@ -57,15 +57,14 @@
 //!    }
 //! }
 
+use anyhow::{Context, anyhow};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
-use std::io::{BufWriter, Write, Result};
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::io::{BufWriter, Result, Write};
 use std::ops::Range;
-use anyhow::{anyhow, Context};
-
+use std::path::Path;
 
 #[derive(PartialEq, Debug)]
 pub struct DNA;
@@ -85,8 +84,19 @@ pub struct Alignment<Kind> {
 impl<Kind> Alignment<Kind> {
     pub fn new(sequence_data: Vec<u8>, rows: usize, ids: Vec<String>) -> Self {
         let cols = sequence_data.len() / rows;
-        let id_to_index = ids.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect();
-        Self { sequence_data, rows, cols, ids, id_to_index, _marker: std::marker::PhantomData }
+        let id_to_index = ids
+            .iter()
+            .enumerate()
+            .map(|(i, id)| (id.clone(), i))
+            .collect();
+        Self {
+            sequence_data,
+            rows,
+            cols,
+            ids,
+            id_to_index,
+            _marker: std::marker::PhantomData,
+        }
     }
     //to access a row by ID
     pub fn get_row_by_id(&self, id: &str) -> Option<&[u8]> {
@@ -97,7 +107,8 @@ impl<Kind> Alignment<Kind> {
     //to delete a column by start and end
     pub fn remove_columns(&mut self, start: usize, end: usize) {
         let cols_to_remove = end - start;
-        let mut new_data = Vec::with_capacity(self.sequence_data.len() - (self.rows * cols_to_remove));
+        let mut new_data =
+            Vec::with_capacity(self.sequence_data.len() - (self.rows * cols_to_remove));
 
         for row in self.sequence_data.chunks_exact(self.cols) {
             //keeping everything before the slice and everything after
@@ -110,20 +121,22 @@ impl<Kind> Alignment<Kind> {
     }
     //to delete a row by indexed number
     pub fn remove_row_by_number(&mut self, row_idx: usize) {
-        if row_idx >= self.rows { return; }
-        
+        if row_idx >= self.rows {
+            return;
+        }
+
         let start = row_idx * self.cols;
         let end = start + self.cols;
-        
+
         // Remove from the data vector
         self.sequence_data.drain(start..end);
-        
+
         // Update the ID map and row count
         let id_to_remove = self.ids[row_idx].clone();
         self.id_to_index.remove(&id_to_remove);
         self.ids.remove(row_idx);
         self.rows -= 1;
-        
+
         // Re-index the map (crucial for maintaining O(1) lookup)
         self.reindex_map();
     }
@@ -137,35 +150,33 @@ impl<Kind> Alignment<Kind> {
     pub fn remove_row_by_id(&mut self, id: &str) {
         if let Some(&idx) = self.id_to_index.get(id) {
             self.remove_row_by_number(idx);
-            }
+        }
     }
     //to get a frequency map of residues at a given column index.
     pub fn column_counts(&self, col_idx: usize) -> HashMap<u8, usize> {
         let mut counts = HashMap::new();
-        
+
         for r in 0..self.rows {
             let residue = self.sequence_data[r * self.cols + col_idx];
             *counts.entry(residue).or_insert(0) += 1;
         }
-        
+
         counts
     }
     //to get a list vector of counters for every column in the alignment
     pub fn all_column_counts(&self) -> Vec<HashMap<u8, usize>> {
-        (0..self.cols)
-            .map(|c| self.column_counts(c))
-            .collect()
+        (0..self.cols).map(|c| self.column_counts(c)).collect()
     }
     //to check for gaps - Returns true if the proportion of gaps '-' in a column exceeds the provided cutoff (0.0 to 1.0)
     pub fn is_gap_heavy(&self, col_idx: usize, cutoff: f32) -> bool {
         let mut gap_count = 0;
-        
+
         for r in 0..self.rows {
             if self.sequence_data[r * self.cols + col_idx] == b'-' {
                 gap_count += 1;
             }
         }
-        
+
         let gap_proportion = gap_count as f32 / self.rows as f32;
         gap_proportion > cutoff
     }
@@ -178,16 +189,20 @@ impl<Kind> Alignment<Kind> {
     }
     pub fn purge_gappy_columns(&mut self, cutoff: f32) {
         let to_remove = self.identify_gappy_columns(cutoff);
-        
+
         //NB: when removing multiple columns, we must remove from right to left to avoid index shifting, or use a new buffer
         for &col_idx in to_remove.iter().rev() {
             self.remove_columns(col_idx, col_idx + 1);
         }
     }
-    //to print the alignment. 
+    //to print the alignment.
     //row_range: e.g., Some(0..5) for first five rows. None for all.
     //col_range: e.g., Some(0..50) for first 50 columns. None for all.
-    pub fn display(&self, row_range: Option<Range<usize>>, col_range: Option<Range<usize>>) -> io::Result<()> {
+    pub fn display(
+        &self,
+        row_range: Option<Range<usize>>,
+        col_range: Option<Range<usize>>,
+    ) -> io::Result<()> {
         // Fallback to full range if None is provided
         let rows = row_range.unwrap_or(0..self.rows);
         let cols = col_range.unwrap_or(0..self.cols);
@@ -208,29 +223,34 @@ impl<Kind> Alignment<Kind> {
 
                 // Ensure we don't slice past the end of the actual row
                 let safe_end = end.min(row_start_in_buffer + self.cols);
-                
+
                 if let Some(row_slice) = self.sequence_data.get(start..safe_end) {
                     handle.write_all(row_slice)?;
                     handle.write_all(b"\n")?;
                 }
             }
         }
-        
+
         handle.flush()?;
         Ok(())
     }
     pub fn display_interleaved(
-        &self, 
-        row_range: Option<Range<usize>>, 
+        &self,
+        row_range: Option<Range<usize>>,
         col_range: Option<Range<usize>>,
-        block_width: usize // Usually 60 or 80
+        block_width: usize, // Usually 60 or 80
     ) -> io::Result<()> {
         let rows = row_range.unwrap_or(0..self.rows);
         let cols = col_range.unwrap_or(0..self.cols);
 
         let stdout = io::stdout();
         let mut handle = BufWriter::new(stdout.lock());
-        let max_id_width = rows.clone().map(|i| self.ids[i].len()).max().unwrap_or(10).min(20); //capped at 20
+        let max_id_width = rows
+            .clone()
+            .map(|i| self.ids[i].len())
+            .max()
+            .unwrap_or(10)
+            .min(20); //capped at 20
         //iterate through columns in "blocks"
         for block_start in (cols.start..cols.end).step_by(block_width) {
             let block_end = (block_start + block_width).min(cols.end);
@@ -240,9 +260,9 @@ impl<Kind> Alignment<Kind> {
                 if let Some(id) = self.ids.get(r_idx) {
                     //truncate or pad ID for alignment
                     let display_id = if id.len() > 10 { &id[..10] } else { id };
-                    
+
                     // print ID with padding for clean columns
-                    write!(handle, "{:<width$} ", display_id, width=max_id_width)?;
+                    write!(handle, "{:<width$} ", display_id, width = max_id_width)?;
 
                     //slice the specific chunk for this row
                     let row_offset = r_idx * self.cols;
@@ -258,7 +278,7 @@ impl<Kind> Alignment<Kind> {
             //add a spacer between blocks
             writeln!(handle)?;
         }
-        
+
         handle.flush()?;
         Ok(())
     }
@@ -284,21 +304,21 @@ impl<Kind> Alignment<Kind> {
     }
     //to write part of the alignment to file
     pub fn write_fasta_part<P: AsRef<Path>>(
-        &self, 
-        path: P, 
-        row_range: Option<Range<usize>>, 
+        &self,
+        path: P,
+        row_range: Option<Range<usize>>,
         col_range: Option<Range<usize>>,
-        wrap: Option<usize>
+        wrap: Option<usize>,
     ) -> anyhow::Result<()> {
         let rows = row_range.unwrap_or(0..self.rows);
         let cols = col_range.unwrap_or(0..self.cols);
-        
+
         let file = File::create(path)?;
         let mut writer = BufWriter::new(file);
 
         for r in rows {
             writeln!(writer, ">{}", self.ids[r])?;
-            
+
             let start = (r * self.cols) + cols.start;
             let end = (r * self.cols) + cols.end;
             let row_chunk = &self.sequence_data[start..end];
@@ -316,7 +336,7 @@ impl<Kind> Alignment<Kind> {
         Ok(())
     }
     //to write the current state of the alignment to a FASTA file.
-    //to wrap: Optional number of characters per line (e.g., Some(60)). 
+    //to wrap: Optional number of characters per line (e.g., Some(60)).
     //or use None for a single line per sequence.
     pub fn write_fasta<P: AsRef<Path>>(&self, path: P, wrap: Option<usize>) -> Result<()> {
         let file = File::create(path)?;
@@ -345,7 +365,7 @@ impl<Kind> Alignment<Kind> {
                 }
             }
         }
-        
+
         //ensure all the data is flushed to the disk
         writer.flush()?;
         Ok(())
@@ -369,8 +389,9 @@ impl Alignment<DNA> {
         for &base in column.iter().filter(|&&b| b != b'-') {
             *counts.entry(base).or_insert(0) += 1;
         }
-        
-        counts.into_iter()
+
+        counts
+            .into_iter()
             .max_by_key(|&(_, count)| count)
             .map(|(base, _)| base as char)
             .unwrap_or('-') // Default to gap if column is empty
@@ -396,30 +417,39 @@ impl Alignment<DNA> {
 impl Alignment<Protein> {
     //to find a single shannon entropy value for a column
     pub fn calculate_shannon_entropy(&self, column: &[u8]) -> f32 {
-        if column.is_empty() { return 0.0; }
+        if column.is_empty() {
+            return 0.0;
+        }
         let mut counts = HashMap::new();
-	let mut non_gap_count = 0;
-	//only counting non gaps
-	for &residue in column.iter().filter(|&&b| b != b'-') {
-	  *counts.entry(residue).or_insert(0) += 1;
-	  non_gap_count +=1;
-	  }
-	if non_gap_count == 0 { return 0.0; }
-	let total = non_gap_count as f32;
-        counts.values()
+        let mut non_gap_count = 0;
+        //only counting non gaps
+        for &residue in column.iter().filter(|&&b| b != b'-') {
+            *counts.entry(residue).or_insert(0) += 1;
+            non_gap_count += 1;
+        }
+        if non_gap_count == 0 {
+            return 0.0;
+        }
+        let total = non_gap_count as f32;
+        counts
+            .values()
             .map(|&count| {
-                let p = count as f32/total;
-		-p * p.log2()
-		}).sum()
-            }
+                let p = count as f32 / total;
+                -p * p.log2()
+            })
+            .sum()
+    }
     //to find the column entropy of a group of columns as a list
     pub fn column_entropy(&self) -> Vec<f32> {
-        self.iter_cols().map(|col| self.calculate_shannon_entropy(&col)).collect()
-	}
+        self.iter_cols()
+            .map(|col| self.calculate_shannon_entropy(&col))
+            .collect()
+    }
     //to identify rare residues at a column index
     pub fn rare_residues_at_site(&self, col_idx: usize) -> Vec<u8> {
         let counts = self.column_counts(col_idx);
-        counts.into_iter()
+        counts
+            .into_iter()
             .filter(|&(_, count)| count == 1) // Residues appearing only once
             .map(|(residue, _)| residue)
             .collect()
@@ -478,8 +508,10 @@ pub fn parse_fasta<P: AsRef<Path>>(filename: P) -> anyhow::Result<(Vec<String>, 
     for (line_idx, line) in reader.lines().enumerate() {
         let line = line.context("Failed to read line")?;
         let line = line.trim();
-        
-        if line.is_empty() || line.starts_with('#') { continue; }
+
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
 
         if line.starts_with('>') {
             found_first_header = true;
@@ -490,9 +522,12 @@ pub fn parse_fasta<P: AsRef<Path>>(filename: P) -> anyhow::Result<(Vec<String>, 
             // Store the ID (minus the '>')
             ids.push(line[1..].to_string());
         } else {
-	    if !found_first_header {
-	       return Err(anyhow!("format error line {}: please ensure the MSA is in fasta format (headers with >)", &line_idx));
-	       }
+            if !found_first_header {
+                return Err(anyhow!(
+                    "format error line {}: please ensure the MSA is in fasta format (headers with >)",
+                    &line_idx
+                ));
+            }
             //append sequence data (handling multi-line sequences)
             current_seq.extend_from_slice(line.as_bytes());
         }
@@ -519,22 +554,30 @@ pub fn load_msa_auto<P: AsRef<Path>>(filename: P) -> anyhow::Result<AlignmentKin
     let (ids, data) = parse_fasta(&filename)?;
     if ids.is_empty() || data.is_empty() {
         return Err(anyhow!("empty input cannot determine alignment type"));
-	}
+    }
     //automagic detection
-    let is_protein = data.iter()
+    let is_protein = data
+        .iter()
         .filter(|&&b| b != b'-') // Ignore gaps
-        .take(100)               // Peek at first 100 residues
+        .take(100) // Peek at first 100 residues
         .any(|&b| {
             let c = b.to_ascii_uppercase();
             // Amino acids that don't exist in DNA/RNA
-            matches!(c, b'E' | b'F' | b'I' | b'L' | b'P' | b'Q' | b'R' | b'V' | b'W' | b'Y')
+            matches!(
+                c,
+                b'E' | b'F' | b'I' | b'L' | b'P' | b'Q' | b'R' | b'V' | b'W' | b'Y'
+            )
         });
 
     let num_rows = ids.len();
     if is_protein {
-        Ok(AlignmentKind::Protein(Alignment::<Protein>::new(data, num_rows, ids)))
+        Ok(AlignmentKind::Protein(Alignment::<Protein>::new(
+            data, num_rows, ids,
+        )))
     } else {
-        Ok(AlignmentKind::DNA(Alignment::<DNA>::new(data, num_rows, ids)))
+        Ok(AlignmentKind::DNA(Alignment::<DNA>::new(
+            data, num_rows, ids,
+        )))
     }
 }
 #[cfg(test)]
@@ -544,9 +587,9 @@ mod tests {
     // Helper to create a dummy DNA alignment
     fn setup_test_dna_msa() -> Alignment<DNA> {
         let seq1 = b"ATGC--ATGCATGCATGC".to_vec(); // 3 rows of 6 columns
-	let seq2 = b"ATGC-AATGCTTGCATGC".to_vec();
-	let seq3 = b"TTGC-AATCCATGCAAGC".to_vec();
-	let data : Vec<u8> = vec![seq1, seq2, seq3].into_iter().flatten().collect();
+        let seq2 = b"ATGC-AATGCTTGCATGC".to_vec();
+        let seq3 = b"TTGC-AATCCATGCAAGC".to_vec();
+        let data: Vec<u8> = vec![seq1, seq2, seq3].into_iter().flatten().collect();
         let ids = vec!["seq1".to_string(), "seq2".to_string(), "seq3".to_string()];
         Alignment::<DNA>::new(data, 3, ids)
     }
@@ -571,41 +614,41 @@ mod tests {
     fn test_gap_heavy_detection() {
         let msa = setup_test_dna_msa();
         //in this example column 5 has 1 gap out of 3 (33%)
-        assert!(msa.is_gap_heavy(5, 0.3));   // 0.33 > 0.3 is true
-        assert!(!msa.is_gap_heavy(5, 0.4));  // 0.33 > 0.4 is false
+        assert!(msa.is_gap_heavy(5, 0.3)); // 0.33 > 0.3 is true
+        assert!(!msa.is_gap_heavy(5, 0.4)); // 0.33 > 0.4 is false
     }
 
     #[test]
     fn test_column_removal() {
         let mut msa = setup_test_dna_msa();
         let original_cols = msa.cols;
-    
+
         // Remove columns 1 and 2 (indices 1..3)
         msa.remove_columns(1, 3);
-    
+
         assert_eq!(msa.cols, original_cols - 2);
-    
+
         // row 0 was: A [T G] C - - A T G C A T G C A T G C
         // should be: A C - - A T G C A T G C A T G C
         let result = msa.get_row_by_id("seq1").unwrap();
         assert_eq!(result, b"AC--ATGCATGCATGC");
-   }
-   #[test]
-   fn test_consensus_sequence() {
-       let msa = setup_test_dna_msa();
-       let consensus = msa.consensus_sequence();
-       assert_eq!(consensus, "ATGC-AATGCATGCATGC".to_string());
-   }
-   
-   #[test]
-   fn test_protein_column_entropy() {
-       // Column 0: Perfectly conserved (M, M) -> Entropy 0
-       // Column 1: Half M, half A -> Entropy 1.0
-       let data = b"MMMA".to_vec(); 
-       let ids = vec!["p1".into(), "p2".into()];
-       let msa = Alignment::<Protein>::new(data, 2, ids);
-       let result = msa.column_entropy();
-       let total: f32 = result.iter().sum();
-       assert!((total - 1.0).abs() < f32::EPSILON);
-       }
+    }
+    #[test]
+    fn test_consensus_sequence() {
+        let msa = setup_test_dna_msa();
+        let consensus = msa.consensus_sequence();
+        assert_eq!(consensus, "ATGC-AATGCATGCATGC".to_string());
+    }
+
+    #[test]
+    fn test_protein_column_entropy() {
+        // Column 0: Perfectly conserved (M, M) -> Entropy 0
+        // Column 1: Half M, half A -> Entropy 1.0
+        let data = b"MMMA".to_vec();
+        let ids = vec!["p1".into(), "p2".into()];
+        let msa = Alignment::<Protein>::new(data, 2, ids);
+        let result = msa.column_entropy();
+        let total: f32 = result.iter().sum();
+        assert!((total - 1.0).abs() < f32::EPSILON);
+    }
 }

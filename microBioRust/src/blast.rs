@@ -97,14 +97,13 @@
 #![allow(unused_imports)]
 use anyhow::{Context, Result};
 use async_compression::tokio::bufread::GzipDecoder as AsyncGzDecoder;
+use quick_xml::escape::unescape;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
-use quick_xml::escape::unescape;
 use serde::Serialize;
 use serde_json::ser::Serializer as JsonSerializer;
 use std::io::Cursor;
 use tokio::io::{self, AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncWriteExt, BufReader};
-
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BlastTabRecord {
@@ -185,7 +184,9 @@ macro_rules! read_parse_opt {
                 }
             }
             Err(e) => {
-                return Some(std::result::Result::<$ok_ty, anyhow::Error>::Err(anyhow::Error::from(e)));
+                return Some(std::result::Result::<$ok_ty, anyhow::Error>::Err(
+                    anyhow::Error::from(e),
+                ));
             }
         }
     }};
@@ -196,7 +197,7 @@ macro_rules! read_parse_val {
     ($self:expr, $tag:expr, $parent_opt:expr, $field:ident, $ok_ty:ty) => {{
         // 1. Read first
         let res = $self.read_tag_content($tag).await;
-        
+
         // 2. Update second
         match res {
             Ok(text) => {
@@ -205,7 +206,9 @@ macro_rules! read_parse_val {
                 }
             }
             Err(e) => {
-                return Some(std::result::Result::<$ok_ty, anyhow::Error>::Err(anyhow::Error::from(e)));
+                return Some(std::result::Result::<$ok_ty, anyhow::Error>::Err(
+                    anyhow::Error::from(e),
+                ));
             }
         }
     }};
@@ -228,7 +231,6 @@ pub async fn open_async_reader(path: &str) -> Result<Box<dyn AsyncBufRead + Unpi
         Ok(Box::new(buf))
     }
 }
-
 
 // BLAST (-outfmt 6) format 6 single line tabular output async parser — streaming line-by-line
 pub async fn stream_outfmt6_to_json<R>(reader: R) -> Result<()>
@@ -293,53 +295,53 @@ where
 {
     pub fn from_reader(r: R) -> Self {
         //let mut reader = AsyncReader::from_reader(r);
-	let mut reader = Reader::from_reader(r);
+        let mut reader = Reader::from_reader(r);
         reader.config_mut().trim_text(true);
-	reader.config_mut().check_end_names = false;
+        reader.config_mut().check_end_names = false;
         Self {
             reader,
             buf: Vec::new(),
             in_iteration: false,
             in_hit: false,
             in_hsp: false,
-	    in_stats: false,
+            in_stats: false,
             cur_iteration: None,
             cur_hit: None,
             cur_hsp: None,
-	    cur_stats: None,
+            cur_stats: None,
         }
     }
     /// Return the next iteration asynchronously (and none on EOF)
     pub async fn read_tag_content(&mut self, end_tag_name: &[u8]) -> Result<String> {
-    let mut text = String::new();
-    //separate buffer for the inner loop
-    loop {
-       match self.reader.read_event_into_async(&mut self.buf).await {
-           Ok(Event::Text(e)) => {
-	       //unescape XML characters
-	       let raw = std::str::from_utf8(&e).context("utf8 conversion")?;
-	       let escaped = unescape(raw).context("unescaping xml")?;
-	       text.push_str(&escaped);
-	       }
-	   Ok(Event::CData(e)) => {
-	       let raw = std::str::from_utf8(&e).context("utf8 conversion")?;
-	       text.push_str(raw);
-	       }
-	   Ok(Event::End(e)) => {
-	       if e.name().as_ref() == end_tag_name {
-	          self.buf.clear();
-		  return Ok(text);
-		  }
-	       }
-	   Ok(Event::Eof) => {
-	       return Err(anyhow::anyhow!("Unexpected EOF while reading tag content"));
-	       }
-	   Err(e) => return Err(anyhow::Error::from(e)),
-	   _ => { () }
-	   }
-	   self.buf.clear();
-	   }
-       }
+        let mut text = String::new();
+        //separate buffer for the inner loop
+        loop {
+            match self.reader.read_event_into_async(&mut self.buf).await {
+                Ok(Event::Text(e)) => {
+                    //unescape XML characters
+                    let raw = std::str::from_utf8(&e).context("utf8 conversion")?;
+                    let escaped = unescape(raw).context("unescaping xml")?;
+                    text.push_str(&escaped);
+                }
+                Ok(Event::CData(e)) => {
+                    let raw = std::str::from_utf8(&e).context("utf8 conversion")?;
+                    text.push_str(raw);
+                }
+                Ok(Event::End(e)) => {
+                    if e.name().as_ref() == end_tag_name {
+                        self.buf.clear();
+                        return Ok(text);
+                    }
+                }
+                Ok(Event::Eof) => {
+                    return Err(anyhow::anyhow!("Unexpected EOF while reading tag content"));
+                }
+                Err(e) => return Err(anyhow::Error::from(e)),
+                _ => (),
+            }
+            self.buf.clear();
+        }
+    }
     pub async fn next_iteration(&mut self) -> Option<Result<BlastXmlIteration>> {
         loop {
             match self.reader.read_event_into_async(&mut self.buf).await {
@@ -347,223 +349,434 @@ where
                     match e.name().as_ref() {
                         b"Iteration" => {
                             self.in_iteration = true;
-                            self.cur_iteration = Some(BlastXmlIteration { query_id: None, query_def: None, query_len: None, hits: Vec::new(), stats: None, });
+                            self.cur_iteration = Some(BlastXmlIteration {
+                                query_id: None,
+                                query_def: None,
+                                query_len: None,
+                                hits: Vec::new(),
+                                stats: None,
+                            });
                         }
                         b"Iteration_query-def" => {
                             if self.in_iteration {
-                               read_parse_opt!(self, b"Iteration_query-def", self.cur_iteration, query_def, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Iteration_query-def",
+                                    self.cur_iteration,
+                                    query_def,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Iteration_query-ID" => {
-			    if self.in_iteration {
-                               read_parse_opt!(self, b"Iteration_query-ID", self.cur_iteration, query_id, BlastXmlIteration);
-                                }
+                            if self.in_iteration {
+                                read_parse_opt!(
+                                    self,
+                                    b"Iteration_query-ID",
+                                    self.cur_iteration,
+                                    query_id,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Iteration_query-len" => {
                             if self.in_iteration {
-                               read_parse_opt!(self, b"Iteration_query-len", self.cur_iteration, query_len, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Iteration_query-len",
+                                    self.cur_iteration,
+                                    query_len,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hit" => {
-			    //println!("DEBUG: Found Start Hit (in_iter: {})", self.in_iteration);
+                            //println!("DEBUG: Found Start Hit (in_iter: {})", self.in_iteration);
                             if self.in_iteration {
                                 self.in_hit = true;
-                                self.cur_hit = Some(Hit { id: None, def: None, accession: None, len: None, hsps: Vec::new() });
-				//println!("so have created cur_hit {:?}", &self.cur_hit);
+                                self.cur_hit = Some(Hit {
+                                    id: None,
+                                    def: None,
+                                    accession: None,
+                                    len: None,
+                                    hsps: Vec::new(),
+                                });
+                                //println!("so have created cur_hit {:?}", &self.cur_hit);
                             }
-			   }
+                        }
                         b"Hit_id" => {
                             if self.in_hit {
-			            read_parse_opt!(self, b"Hit_id", self.cur_hit, id, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hit_id",
+                                    self.cur_hit,
+                                    id,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hit_def" => {
                             if self.in_hit {
-			            read_parse_opt!(self, b"Hit_def", self.cur_hit, def, BlastXmlIteration);
-				}
-			    }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hit_def",
+                                    self.cur_hit,
+                                    def,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hit_accession" => {
                             if self.in_hit {
-                                    read_parse_opt!(self, b"Hit_accession", self.cur_hit, accession, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hit_accession",
+                                    self.cur_hit,
+                                    accession,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hit_len" => {
                             if self.in_hit {
-                                     read_parse_opt!(self, b"Hit_len", self.cur_hit, len, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hit_len",
+                                    self.cur_hit,
+                                    len,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp" => {
                             if self.in_hit {
                                 self.in_hsp = true;
-                                self.cur_hsp = Some(Hsp { bit_score: 0.0, score: None, evalue: 0.0, query_from: None, query_to: None, hit_from: None, hit_to: None, identity: None, positive: None, gaps: None, align_len: None, qseq: None, hseq: None, midline: None });
+                                self.cur_hsp = Some(Hsp {
+                                    bit_score: 0.0,
+                                    score: None,
+                                    evalue: 0.0,
+                                    query_from: None,
+                                    query_to: None,
+                                    hit_from: None,
+                                    hit_to: None,
+                                    identity: None,
+                                    positive: None,
+                                    gaps: None,
+                                    align_len: None,
+                                    qseq: None,
+                                    hseq: None,
+                                    midline: None,
+                                });
                             }
                         }
                         b"Hsp_bit-score" => {
                             if self.in_hsp {
-                               read_parse_val!(self, b"Hsp_bit-score", self.cur_hsp, bit_score, BlastXmlIteration);
-                               }
+                                read_parse_val!(
+                                    self,
+                                    b"Hsp_bit-score",
+                                    self.cur_hsp,
+                                    bit_score,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_score" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_score", self.cur_hsp, score, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_score",
+                                    self.cur_hsp,
+                                    score,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_evalue" => {
                             if self.in_hsp {
-                               read_parse_val!(self, b"Hsp_evalue", self.cur_hsp, evalue, BlastXmlIteration);
-                                }
+                                read_parse_val!(
+                                    self,
+                                    b"Hsp_evalue",
+                                    self.cur_hsp,
+                                    evalue,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_query-from" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_query-from", self.cur_hsp, query_from, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_query-from",
+                                    self.cur_hsp,
+                                    query_from,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_query-to" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_query-to", self.cur_hsp, query_to, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_query-to",
+                                    self.cur_hsp,
+                                    query_to,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_hit-from" => {
                             if self.in_hsp {
-                                read_parse_opt!(self, b"Hsp_hit-from", self.cur_hsp, hit_from, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_hit-from",
+                                    self.cur_hsp,
+                                    hit_from,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_hit-to" => {
                             if self.in_hsp {
-                                read_parse_opt!(self, b"Hsp_hit-to", self.cur_hsp, hit_to, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_hit-to",
+                                    self.cur_hsp,
+                                    hit_to,
+                                    BlastXmlIteration
+                                );
                             }
+                        }
                         b"Hsp_identity" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_identity", self.cur_hsp, identity, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_identity",
+                                    self.cur_hsp,
+                                    identity,
+                                    BlastXmlIteration
+                                );
                             }
-			b"Hsp_positive" => {
-                            if self.in_hsp {              
-                               read_parse_opt!(self, b"Hsp_positive", self.cur_hsp, positive, BlastXmlIteration);
-                               }
-			    }
+                        }
+                        b"Hsp_positive" => {
+                            if self.in_hsp {
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_positive",
+                                    self.cur_hsp,
+                                    positive,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hsp_gaps" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_gaps", self.cur_hsp, gaps, BlastXmlIteration);
-			       }
-			    }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_gaps",
+                                    self.cur_hsp,
+                                    gaps,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hsp_qseq" => {
-                            if self.in_hsp {                        
-                               read_parse_opt!(self, b"Hsp_qseq", self.cur_hsp, qseq, BlastXmlIteration);
-			       }
-			    }
+                            if self.in_hsp {
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_qseq",
+                                    self.cur_hsp,
+                                    qseq,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hsp_hseq" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_hseq", self.cur_hsp, hseq, BlastXmlIteration);
-			       }
-			    }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_hseq",
+                                    self.cur_hsp,
+                                    hseq,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hsp_midline" => {
                             if self.in_hsp {
-                               read_parse_opt!(self, b"Hsp_midline", self.cur_hsp, midline, BlastXmlIteration);
-			       }
-			    }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_midline",
+                                    self.cur_hsp,
+                                    midline,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Hsp_align-len" => {
                             if self.in_hsp {
-                                read_parse_opt!(self, b"Hsp_align-len", self.cur_hsp, align_len, BlastXmlIteration);
-                                }
+                                read_parse_opt!(
+                                    self,
+                                    b"Hsp_align-len",
+                                    self.cur_hsp,
+                                    align_len,
+                                    BlastXmlIteration
+                                );
                             }
-			b"Statistics" => {
-			    if self.in_iteration {
-			       self.in_stats = true;
-			       self.cur_stats = Some(Statistics { db_num: None, db_len: None, hsp_len: None, eff_space: None, kappa: None, lambda: None, entropy: None });
-			       }
-			   }
+                        }
+                        b"Statistics" => {
+                            if self.in_iteration {
+                                self.in_stats = true;
+                                self.cur_stats = Some(Statistics {
+                                    db_num: None,
+                                    db_len: None,
+                                    hsp_len: None,
+                                    eff_space: None,
+                                    kappa: None,
+                                    lambda: None,
+                                    entropy: None,
+                                });
+                            }
+                        }
                         b"Statistics_db-num" => {
                             if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_db-num", self.cur_stats, db_num, BlastXmlIteration);
-			      }
-			  }
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_db-num",
+                                    self.cur_stats,
+                                    db_num,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Statistics_db-len" => {
                             if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_db-len", self.cur_stats, db_len, BlastXmlIteration);
-			      }
-			    }
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_db-len",
+                                    self.cur_stats,
+                                    db_len,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
                         b"Statistics_hsp-len" => {
                             if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_hsp-len", self.cur_stats, hsp_len, BlastXmlIteration);
-			      }
-			    }			    
-                       b"Statistics_eff-space" => {
-                            if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_eff-space", self.cur_stats, eff_space, BlastXmlIteration);
-			      }
-			    }
-                       b"Statistics_kappa" => {
-                            if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_kappa", self.cur_stats, kappa, BlastXmlIteration);
-			      }
-			    }
-                       b"Statistics_lambda" => {
-                            if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_lambda", self.cur_stats, lambda, BlastXmlIteration);
-			      }
-			    }
-                       b"Statistics_entropy" => {
-                            if self.in_stats {
-                              read_parse_opt!(self, b"Statistics_entropy", self.cur_stats, entropy, BlastXmlIteration);
-			      }
-			   }
-                        _ => {},
-		      }
-		   }
-                Ok(Event::End(e)) => {
-                    match e.name().as_ref() {
-                        b"Hsp" => {
-                            self.in_hsp = false;
-                            if let Some(hsp) = self.cur_hsp.take() {
-                                if let Some(hit) = &mut self.cur_hit { hit.hsps.push(hsp); }
-				else { println!("DEBUG: error tried to save hsp but cur_hit is none"); }
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_hsp-len",
+                                    self.cur_stats,
+                                    hsp_len,
+                                    BlastXmlIteration
+                                );
                             }
                         }
-                        b"Hit" => {
-			    println!("DEBUG: found end hit");
-                            self.in_hit = false;
-                            if let Some(hit) = self.cur_hit.take() {
-			        println!("DEBUG: Pushing hit to iteration. HSP count: {}", hit.hsps.len());
-                                if let Some(iter) = &mut self.cur_iteration { iter.hits.push(hit); }
-				else { println!("DEBUG: ERROR - Found </Hit>, but cur_hit is None (was it never started?)"); }
+                        b"Statistics_eff-space" => {
+                            if self.in_stats {
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_eff-space",
+                                    self.cur_stats,
+                                    eff_space,
+                                    BlastXmlIteration
+                                );
                             }
                         }
-			b"Iteration_hits" => {
-			    if let Some(hit) = self.cur_hit.take() {
-			       if let Some(iter) = &mut self.cur_iteration {
-			           iter.hits.push(hit);
-				   }
-			       }
-			 }
-                        b"Iteration" => {
-			    println!("DEBUG found end iteration");
-                            self.in_iteration = false;
-                            if let Some(iter) = self.cur_iteration.take() {
-                                return Some(Ok(iter));
+                        b"Statistics_kappa" => {
+                            if self.in_stats {
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_kappa",
+                                    self.cur_stats,
+                                    kappa,
+                                    BlastXmlIteration
+                                );
                             }
                         }
-			b"Statistics" => {
-                            self.in_stats = false;
-                            if let Some(stats) = self.cur_stats.take() {
-                                if let Some(iter) = &mut self.cur_iteration {
-                                    iter.stats = Some(stats);
-                                    }
-                                }
+                        b"Statistics_lambda" => {
+                            if self.in_stats {
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_lambda",
+                                    self.cur_stats,
+                                    lambda,
+                                    BlastXmlIteration
+                                );
+                            }
+                        }
+                        b"Statistics_entropy" => {
+                            if self.in_stats {
+                                read_parse_opt!(
+                                    self,
+                                    b"Statistics_entropy",
+                                    self.cur_stats,
+                                    entropy,
+                                    BlastXmlIteration
+                                );
+                            }
                         }
                         _ => {}
                     }
+                }
+                Ok(Event::End(e)) => match e.name().as_ref() {
+                    b"Hsp" => {
+                        self.in_hsp = false;
+                        if let Some(hsp) = self.cur_hsp.take() {
+                            if let Some(hit) = &mut self.cur_hit {
+                                hit.hsps.push(hsp);
+                            } else {
+                                println!("DEBUG: error tried to save hsp but cur_hit is none");
+                            }
+                        }
+                    }
+                    b"Hit" => {
+                        println!("DEBUG: found end hit");
+                        self.in_hit = false;
+                        if let Some(hit) = self.cur_hit.take() {
+                            println!(
+                                "DEBUG: Pushing hit to iteration. HSP count: {}",
+                                hit.hsps.len()
+                            );
+                            if let Some(iter) = &mut self.cur_iteration {
+                                iter.hits.push(hit);
+                            } else {
+                                println!(
+                                    "DEBUG: ERROR - Found </Hit>, but cur_hit is None (was it never started?)"
+                                );
+                            }
+                        }
+                    }
+                    b"Iteration_hits" => {
+                        if let Some(hit) = self.cur_hit.take() {
+                            if let Some(iter) = &mut self.cur_iteration {
+                                iter.hits.push(hit);
+                            }
+                        }
+                    }
+                    b"Iteration" => {
+                        println!("DEBUG found end iteration");
+                        self.in_iteration = false;
+                        if let Some(iter) = self.cur_iteration.take() {
+                            return Some(Ok(iter));
+                        }
+                    }
+                    b"Statistics" => {
+                        self.in_stats = false;
+                        if let Some(stats) = self.cur_stats.take() {
+                            if let Some(iter) = &mut self.cur_iteration {
+                                iter.stats = Some(stats);
+                            }
+                        }
+                    }
+                    _ => {}
                 },
                 Ok(Event::Eof) => return None,
                 Err(e) => return Some(Err(anyhow::anyhow!(e))),
                 _ => {}
-               }
+            }
             self.buf.clear();
-	    }
         }
+    }
 }
-
 
 //here we use input in a format such as this in order to capture the required format of XML (5) or Tabular (6) and true or false for Json output
 //see examples for further detail
@@ -583,9 +796,14 @@ where
 //}
 
 pub fn infer_format(path: &str, explicit: &Option<String>) -> String {
-    if let Some(f) = explicit { return f.clone(); }
-    if path.ends_with(".xml") || path.ends_with(".xml.gz") { "5".to_string() }
-    else { "6".to_string() }
+    if let Some(f) = explicit {
+        return f.clone();
+    }
+    if path.ends_with(".xml") || path.ends_with(".xml.gz") {
+        "5".to_string()
+    } else {
+        "6".to_string()
+    }
 }
 
 // Unit tests (async if relevant)
@@ -594,7 +812,7 @@ mod tests {
     use super::*;
     use std::io::Write;
     use tokio::io::BufReader as TokioBufReader;
-    
+
     #[tokio::test]
     async fn test_stream_tab_to_json() {
         let data = "q1	h1	99.0	10	0	0	1	10	1	10	1e-5	50
@@ -639,7 +857,7 @@ mod tests {
         let reader = TokioBufReader::new(cursor);
         let mut iter = AsyncBlastXmlIter::from_reader(reader);
         let next = iter.next_iteration().await;
-	println!("next is {:?}", &next);
+        println!("next is {:?}", &next);
         assert!(next.is_some());
         let it = next.unwrap().unwrap();
         assert_eq!(it.query_id.unwrap(), "Query_1");
