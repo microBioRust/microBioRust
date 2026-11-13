@@ -1,5 +1,3 @@
-#[allow(unused_imports)]
-
 //function to calculate the hamming distance between 2 sequences
 pub fn hamming_distance(seq1: &str, seq2: &str) -> usize {
     //sequences must be of equal length, i.e. a sequence alignment

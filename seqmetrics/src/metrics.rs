@@ -600,24 +600,16 @@ mod tests {
                     //println!("next record");
                     //println!("Record id: {:?}", record.id);
                     for (k, v) in &record.cds.attributes {
-                        match record.seq_features.get_sequence_faa(&k) {
-                            Some(value) => {
-                                let seq_faa = value.to_string();
-                                println!("{:?}", &seq_faa);
-                                let hydro_values = hydrophobicity(&seq_faa, 21);
-                                let mut result = String::new();
-                                for hydro in hydro_values {
-                                    if hydro > 1.6 {
-                                        println!(
-                                            "possible transmembrane region - score {}",
-                                            &hydro
-                                        );
-                                    } else {
-                                        ()
-                                    }
+                        if let Some(value) = record.seq_features.get_sequence_faa(k) {
+                            let seq_faa = value.to_string();
+                            println!("{:?}", seq_faa);
+                            let hydro_values = hydrophobicity(&seq_faa, 21);
+                            let mut result = String::new();
+                            for hydro in hydro_values {
+                                if hydro > 1.6 {
+                                    println!("possible transmembrane region - score {}", hydro);
                                 }
                             }
-                            _ => (),
                         };
                     }
                 }
@@ -630,7 +622,7 @@ mod tests {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -649,14 +641,11 @@ mod tests {
                     //println!("next record");
                     //println!("Record id: {:?}", record.id);
                     for (k, v) in &record.cds.attributes {
-                        match record.seq_features.get_sequence_faa(&k) {
-                            Some(value) => {
-                                let seq_faa = value.to_string();
-                                println!("id: {:?}", &k);
-                                molecular_weight_total = molecular_weight(&seq_faa);
-                                println!(">{}|{}\n{}", &record.id, &k, molecular_weight_total);
-                            }
-                            _ => (),
+                        if let Some(value) = record.seq_features.get_sequence_faa(k) {
+                            let seq_faa = value.to_string();
+                            println!("id: {:?}", k);
+                            molecular_weight_total = molecular_weight(&seq_faa);
+                            println!(">{}|{}\n{}", record.id, k, molecular_weight_total);
                         };
                     }
                 }
@@ -669,7 +658,7 @@ mod tests {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -684,15 +673,12 @@ mod tests {
         loop {
             match records.next() {
                 Some(Ok(record)) => {
-                    for (k, _v) in &record.cds.attributes {
-                        match record.seq_features.get_sequence_faa(&k) {
-                            Some(value) => {
-                                let seq_faa = value.to_string();
-                                println!("id: {:?}", &k);
-                                results = amino_counts(&seq_faa);
-                                println!(">{}|{}\n{:?}", &record.id, &k, results);
-                            }
-                            _ => (),
+                    for k in record.cds.attributes.keys() {
+                        if let Some(value) = record.seq_features.get_sequence_faa(k) {
+                            let seq_faa = value.to_string();
+                            println!("id: {:?}", k);
+                            results = amino_counts(&seq_faa);
+                            println!(">{}|{}\n{:?}", record.id, k, results);
                         };
                     }
                 }
@@ -705,7 +691,7 @@ mod tests {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -722,23 +708,17 @@ mod tests {
         loop {
             match records.next() {
                 Some(Ok(record)) => {
-                    for (k, _v) in &record.cds.attributes {
-                        match record.seq_features.get_sequence_faa(&k) {
-                            Some(value) => {
-                                let seq_faa = value.to_string();
-                                results = amino_percentage(&seq_faa);
-                                let aromatic_aas = vec!['Y', 'W', 'F'];
-                                let aromaticity: f64 = aromatic_aas
-                                    .iter()
-                                    .filter_map(|&amino| results.get(&amino))
-                                    .map(|&perc| perc / 100.0)
-                                    .sum();
-                                println!(
-                                    "aromaticity for {} {} is {}",
-                                    &record.id, &k, &aromaticity
-                                );
-                            }
-                            _ => (),
+                    for k in record.cds.attributes.keys() {
+                        if let Some(value) = record.seq_features.get_sequence_faa(k) {
+                            let seq_faa = value.to_string();
+                            results = amino_percentage(&seq_faa);
+                            let aromatic_aas = ['Y', 'W', 'F'];
+                            let aromaticity: f64 = aromatic_aas
+                                .iter()
+                                .filter_map(|&amino| results.get(&amino))
+                                .map(|&perc| perc / 100.0)
+                                .sum();
+                            println!("aromaticity for {} {} is {}", record.id, k, aromaticity);
                         };
                     }
                 }
@@ -751,7 +731,7 @@ mod tests {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
     use tokio::io::BufReader;
     #[cfg(test)]
@@ -768,17 +748,11 @@ mod tests {
         loop {
             match records.next() {
                 Some(Ok(record)) => {
-                    for (k, _v) in &record.cds.attributes {
-                        match record.seq_features.get_sequence_faa(&k) {
-                            Some(value) => {
-                                let seq_faa = value.to_string();
-                                let result = instability_index(seq_faa, &weights).await;
-                                println!(
-                                    "instability index for {} {} is {}",
-                                    &record.id, &k, &result
-                                );
-                            }
-                            _ => (),
+                    for k in record.cds.attributes.keys() {
+                        if let Some(value) = record.seq_features.get_sequence_faa(k) {
+                            let seq_faa = value.to_string();
+                            let result = instability_index(seq_faa, &weights).await;
+                            println!("instability index for {} {} is {}", record.id, k, result);
                         };
                     }
                 }
@@ -803,7 +777,7 @@ mod tests {
             .collect();
         let ids: Vec<String> = records.iter().map(|rec| rec.id().to_string()).collect();
         let distances = hamming_matrix(&sequences).await?;
-        let _ = write_distances_csv(ids, distances, "hamming_dists.csv");
+        write_distances_csv(ids, distances, "hamming_dists.csv").await?;
         Ok(())
     }
 }
