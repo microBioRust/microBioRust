@@ -215,7 +215,7 @@ pub enum InternalRecord {
 
 //PyFeatureInfo contains all the feature attributes, there is an extras field for any uncaptured field (e.g. db_xref, EC)
 #[gen_stub_pyclass]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PyFeatureInfo {
     #[pyo3(get)]
@@ -274,7 +274,7 @@ impl PyFeatureInfo {
 
 //PySequenceInfo contains the sequenceattributes, with an extras field as for PyFeatureInfo
 #[gen_stub_pyclass]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PySequenceInfo {
     #[pyo3(get)]
@@ -532,7 +532,7 @@ create_collection!(FfnCollection, PyFfnInfo, "FfnCollection");
 //TODO: replace the InternalRecord with a top level Record if we move from gbk/embl to a generic type
 //and all match arms collapse to single call
 #[gen_stub_pyclass]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PyRecord {
     inner: InternalRecord,
@@ -732,7 +732,7 @@ pub fn gbk_to_ffn(filename: &str, py: Python<'_>) -> PyResult<FfnCollection> {
     Ok(FfnCollection { inner })
 }
 #[gen_stub_pyclass]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PyFaaInfo {
     #[pyo3(get)]
@@ -764,7 +764,7 @@ crate::impl_build_faa!(
 );
 
 #[gen_stub_pyclass]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PyFfnInfo {
     #[pyo3(get)]
