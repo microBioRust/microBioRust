@@ -41,7 +41,7 @@ Currently there is functionality for:<br>
 
 ````
 
-To see more on how to use the project please have a look at usage: [here](docs/usage.md)
+To see more on how to use the project please have a look at usage: [here](https://microbiorust.github.io/docs/usage/)
 
 To use a specific workspace (such as microBioRust, seqmetrics, microbiorust-py or heatmap) clone the project, cd into the specific directory required and build the project from there.
 
