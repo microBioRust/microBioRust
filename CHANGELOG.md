@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project should adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [Unreleased] 17/11/26
+
+### Added
+- Ability to use a protein alignment MSA to create consensus sequence, previously there was only functionality for a DNA MSA, moved the function
+  out of the Alignment<DNA> to generic and added an extra underpinning function to count frequencies
+- Test for the protein alignment in microBioRust and microbiorust-py
+
+## Changed
+- microbiorust-py built against microBioRust 0.2.0 (`path` dependency) 
+- `impl_build_features!`, `impl_build_sequences!`, `impl_build_faa!` and
+  `impl_build_ffn!` read struct fields instead of iterating over enum variants, from legacy enum Attributes.
+- `PyFeatureInfo.extras` now holds `transl_table` and `feature_type` - this may not be enough, extras may be widened
+- R-CMD-check workflow is restricted to changes in `microbiorust-r/`, not to run on every push to any crate
+- apply clippy and fmt suggestions to seqmetrics @modernmedici
+- README: point the usage link at the hosted docs- @modernmedici
+- microbiorust-py: opt out of the automatic FromPyObject derive - @modernmedici
+
+### Fixed
+
+- Removed a leftover enum-style filter on `SequenceAttributes` in microbiorust-py `lib.rs`.
+
 ## [Unreleased] 06/11/26
 
 ### Added
