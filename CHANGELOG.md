@@ -59,7 +59,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
    tidied `Option` handling in the sequence loop.
 
 ## Unreleased ##
----
 
 ### Added ###
 - docs
@@ -79,6 +78,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Heatmap path fix
 - Moved images folder to assets in docs windows install section
 
-### Removed ###
+## 2026
+Since 0.1.4 (Aug – Oct 2026)
+Security
+Applied security fixes to all GitHub workflows. (#56) by @ubiratansoares
+Performance
+Improved the efficiency of the seqmetrics instability index calculation (closes #52). (#55) by @ChinmayMoghe
+Documentation
+Added a DeepWiki link for AI-generated docs. (#54) by @colindaven
+0.1.4 (Jun 2, 2026)
+Release
+Version 0.1.4 final. (#49) by @LCrossman
+Documentation
+Added an example of #[pyclass] usage (#38), building on the original proposal by @davidhewitt. (#45) by @LCrossman
+Python bindings (microbiorust-py)
+Added pytests and improved __init__.py setup. (#41) by @LCrossman
+Fixed top-level imports and added __init__.py to support them. (#39) by @LCrossman
+Packaging
+Merged changes for pip and crates releases. (#37) by @LCrossman
+2025
+December 2025
+Changed
+Compared and merged changes across forks. (#36) by @LCrossman
+Performance
+GenBank (GBK) parsing speedup. (#35) by @LCrossman
+November 2025
+Performance
+Optimised parser performance by pre-compiling regexes with lazy_static. (#34) by @kh3rld
+Documentation
+Added missing trailing code fences in the crates README. (#32) by @corneliusroemer
+Maintenance
+Incorporated changes following the GitHub organisation move. (#31) by @LCrossman
+September 2025
+Changed
+Refactored embl, gbk and record: deduplicated RangeValue, introduced GenericRecord and conversions, and exposed the record module. (#30) by @kh3rld
+Documentation
+README update. (#29) by @ZEZE1020
+August 2025
+Changed
+Reusable code improvements. (#26) by @martcpp
+July 2025
+Changed
+Updated use declarations. (#25) by @pem131
+Cleaned up the repository. (#23) by @martcpp
+June 2025
+Documentation
+Fixed the repository link and made small formatting fixes. (#21) by @CGMossa
+March 2025
+Changed
+Refactored the heatmap module and improved its errors. (#16) by @em-baggie
+2024
+December 2024
+Changed
+Improved error handling in the heatmap. (#14) by @EleisonC
+Improved error handling in the read function. (#13) by @EleisonC
+October 2024
+Fixed
+Reviewed and corrected CamelCase / snake_case naming. (#10) by @Pranith2003
+Contributors
 
+Thank you to everyone who has contributed!:
+
+@LCrossman (owner), @ubiratansoares, @ChinmayMoghe, @colindaven, @davidhewitt, @kh3rld, @corneliusroemer, @ZEZE1020, @martcpp, @pem131, @CGMossa, @em-baggie, @EleisonC, @Pranith2003
 
