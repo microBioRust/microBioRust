@@ -1,28 +1,25 @@
 #[macro_export]
 macro_rules! impl_build_features {
-    ($fn_name:ident, $record_type:ty, $enum_path:path) => {
+    ($fn_name:ident, $record_type:ty, $attrs_path:path) => {
         fn $fn_name(
             r: &$record_type,
             py: ::pyo3::Python<'_>,
         ) -> ::std::collections::HashMap<String, ::pyo3::Py<$crate::PyFeatureInfo>> {
-            use $enum_path as Attrs;
             let mut map = ::std::collections::HashMap::new();
             for (tag, attrs) in &r.cds.attributes {
                 let tag_owned = tag.clone();
                 let mut info = $crate::PyFeatureInfo::new(&tag_owned);
-                for attr in attrs {
-                    #[allow(unreachable_patterns)]
-                    match attr {
-                        Attrs::Gene { value } => info.gene = Some(value.clone()),
-                        Attrs::Product { value } => info.product = Some(value.clone()),
-                        Attrs::Start { value } => info.start = Some(value.get_value()),
-                        Attrs::Stop { value } => info.stop = Some(value.get_value()),
-                        Attrs::Strand { value } => info.strand = Some(*value),
-                        Attrs::CodonStart { value } => info.codon_start = Some(*value),
-                        other => {
-                            info.extras.push(format!("{:?}", other));
-                        }
-                    }
+                info.gene = attrs.gene.clone();
+                info.product = attrs.product.clone();
+                info.start = attrs.start.as_ref().map(|v| v.get_value());
+                info.stop = attrs.stop.as_ref().map(|v| v.get_value());
+                info.strand = attrs.strand;
+                info.codon_start = attrs.codon_start;
+                if let Some(t) = &attrs.transl_table {
+                    info.extras.push(format!("transl_table: {:?}", t));
+                }
+                if let Some(k) = &attrs.feature_type {
+                    info.extras.push(format!("feature_type: {:?}", k));
                 }
                 let obj = ::pyo3::Py::new(py, info).expect("failed to allocate the PyFeatureInfo");
                 map.insert(tag_owned, obj);
@@ -33,26 +30,17 @@ macro_rules! impl_build_features {
 }
 #[macro_export]
 macro_rules! impl_build_sequences {
-    ($fn_name:ident, $record_type:ty, $enum_path:path) => {
+    ($fn_name:ident, $record_type:ty, $attrs_path:path) => {
         fn $fn_name(
             r: &$record_type,
             py: ::pyo3::Python<'_>,
         ) -> ::std::collections::HashMap<String, ::pyo3::Py<$crate::PySequenceInfo>> {
-            use $enum_path as Attrs;
             let mut map = ::std::collections::HashMap::new();
             for (tag, attrs) in &r.seq_features.seq_attributes {
                 let tag_owned = tag.clone();
                 let mut info = $crate::PySequenceInfo::new(&tag_owned);
-                for attr in attrs {
-                    #[allow(unreachable_patterns)]
-                    match attr {
-                        Attrs::SequenceFaa { value } => info.faa = Some(value.clone()),
-                        Attrs::SequenceFfn { value } => info.ffn = Some(value.clone()),
-                        other => {
-                            info.extras.push(format!("{:?}", other));
-                        }
-                    }
-                }
+                info.faa = attrs.sequence_faa.clone();
+                info.ffn = attrs.sequence_ffn.clone();
                 if info.faa.is_some() || info.ffn.is_some() {
                     let obj =
                         ::pyo3::Py::new(py, info).expect("failed to allocate the PySequenceInfo");
@@ -70,25 +58,15 @@ macro_rules! impl_build_faa {
             r: &$record_type,
             py: ::pyo3::Python<'_>,
         ) -> ::std::collections::HashMap<String, ::pyo3::Py<$crate::PyFaaInfo>> {
-            use $enum_path as Attrs;
             let mut map = ::std::collections::HashMap::new();
             for (tag, attrs) in &r.seq_features.seq_attributes {
-                let tag_owned = tag.clone();
-                let mut faa: Option<String> = None;
-                for attr in attrs {
-                    #[allow(unreachable_patterns)]
-                    match attr {
-                        Attrs::SequenceFaa { value } => faa = Some(value.clone()),
-                        _ => {}
-                    }
-                }
-                if let Some(faa_seq) = faa {
+                if let Some(faa_seq) = attrs.sequence_faa.clone() {
                     let info = $crate::PyFaaInfo {
-                        locus_tag: tag_owned.clone(),
+                        locus_tag: tag.clone(),
                         faa: faa_seq,
                     };
                     let obj = ::pyo3::Py::new(py, info).expect("failed to allocate a PyFaaInfo");
-                    map.insert(tag_owned, obj);
+                    map.insert(tag.clone(), obj);
                 }
             }
             map
@@ -103,25 +81,15 @@ macro_rules! impl_build_ffn {
             r: &$record_type,
             py: ::pyo3::Python<'_>,
         ) -> ::std::collections::HashMap<String, ::pyo3::Py<$crate::PyFfnInfo>> {
-            use $enum_path as Attrs;
             let mut map = ::std::collections::HashMap::new();
             for (tag, attrs) in &r.seq_features.seq_attributes {
-                let tag_owned = tag.clone();
-                let mut ffn: Option<String> = None;
-                for attr in attrs {
-                    #[allow(unreachable_patterns)]
-                    match attr {
-                        Attrs::SequenceFfn { value } => ffn = Some(value.clone()),
-                        _ => {}
-                    }
-                }
-                if let Some(ffn_seq) = ffn {
+                if let Some(ffn_seq) = attrs.sequence_ffn.clone() {
                     let info = $crate::PyFfnInfo {
-                        locus_tag: tag_owned.clone(),
+                        locus_tag: tag.clone(),
                         ffn: ffn_seq,
                     };
                     let obj = ::pyo3::Py::new(py, info).expect("failed to allocate a PyFfnInfo");
-                    map.insert(tag_owned, obj);
+                    map.insert(tag.clone(), obj);
                 }
             }
             map

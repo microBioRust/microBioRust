@@ -147,13 +147,13 @@
 //!work with Multiple Sequence Alignments (MSA) through the align submodule
 //!
 //! ```python
-//! from microbiorust.align import subset_msa_alignment, get_consensus
+//! from microbiorust.align import subset_msa_alignment, consensus_sequence
 //!
 //! #subset an alignment (row_start, row_end, col_start, col_end)
 //! sub_aln = subset_msa_alignment("input.fasta", 0, 10, 0, 100)
 //!
 //! #view the consensus
-//! sub_aln.get_consensus()
+//! sub_aln.consensus_sequence()
 //! ```
 //!
 //! ## BLAST
@@ -840,8 +840,7 @@ pub fn gbk_to_faa_count(filename: &str) -> PyResult<usize> {
     Ok(genbank!(filename)
         .iter()
         .flat_map(|r| r.seq_features.seq_attributes.values())
-        .flat_map(|set| set.iter())
-        .filter(|attr| matches!(attr, SequenceAttributes::SequenceFaa { .. }))
+        .filter(|set| set.sequence_faa.is_some())
         .count())
 }
 
@@ -1025,15 +1024,17 @@ pub fn purge_gaps(input: &str, output: &str, threshold: f32) -> PyResult<()> {
 }
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn get_consensus(filename: &str) -> PyResult<String> {
+pub fn consensus_sequence(filename: &str) -> PyResult<String> {
     let kind = load_msa_auto(filename)
         .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("{}", e)))?;
 
     if let AlignmentKind::DNA(aln) = kind {
         Ok(aln.consensus_sequence())
+    } else if let AlignmentKind::Protein(aln) = kind {
+        Ok(aln.consensus_sequence())
     } else {
         Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
-            "Consensus is only available for DNA alignments",
+            "Invalid Alignment file, please check the input file is a DNA or Protein alignment in Fasta format",
         ))
     }
 }
@@ -1123,7 +1124,13 @@ pub fn register_seqmetrics(py: Python<'_>, parent: &Bound<'_, PyModule>) -> PyRe
 #[pyfunction]
 pub fn register_align(py: Python<'_>, parent: &Bound<'_, PyModule>) -> PyResult<()> {
     let m = PyModule::new(py, "align")?;
-    register_all!(m, parent, purge_gaps, subset_msa_alignment, get_consensus);
+    register_all!(
+        m,
+        parent,
+        purge_gaps,
+        subset_msa_alignment,
+        consensus_sequence
+    );
     parent.add_submodule(&m)?;
     py.import("sys")?
         .getattr("modules")?
