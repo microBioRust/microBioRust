@@ -1,6 +1,6 @@
 [package]
 name = "microBioRust-seqmetrics"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 keywords = ["bioinformatics","micro","bio","genomics","sequence-analysis"]
@@ -15,7 +15,7 @@ repository = "https://github.com/microBioRust/microBioRust/seqmetrics"
 unsafe_code = "forbid"
 
 [dependencies]
-microBioRust = "0.1.3"
+microBioRust = { version = "0.2.0", path = "../microBioRust" }
 bio = "2.3.0"
 anyhow = "1.0.93"
 clap = { version = "4.5.19", features = ["derive"] }
