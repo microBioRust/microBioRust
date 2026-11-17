@@ -11,4 +11,4 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 once_cell = "1.21.4"
 extendr-api = "0.9"
-microBioRust-seqmetrics = { path = "../../../seqmetrics" }
+microBioRust-seqmetrics = { git = "https://github.com/microBioRust/microBioRust", branch = "main" }
