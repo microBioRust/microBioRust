@@ -37,7 +37,7 @@
 //! let msa_kind = load_msa_auto(&args.input).expect("file not found error");
 //!    let row_range = args.rows.map(|r| 0..r);
 //!    let col_range = args.cols.map(|c| 0..c);
-//!    
+//!
 //!   match Ok::<AlignmentKind, anyhow::Error>(msa_kind) {
 //!        Ok(AlignmentKind::DNA(mut msa)) => {
 //!            println!("Detected DNA alignment. Purging gaps > 50%...");
@@ -302,6 +302,29 @@ impl<Kind> Alignment<Kind> {
 
         Self::new(new_data, new_rows, new_ids)
     }
+    //to determine the most frequent base at a column
+    pub fn most_frequent_at_site(&self, column: &[u8]) -> char {
+        let mut counts = HashMap::new();
+        for &base in column.iter().filter(|&&b| b != b'-') {
+            *counts.entry(base).or_insert(0) += 1;
+        }
+
+        counts
+            .into_iter()
+            .max_by_key(|&(_, count)| count)
+            .map(|(base, _)| base as char)
+            .unwrap_or('-') // Default to gap if column is empty
+    }
+    //to provide a consensus sequence
+    pub fn consensus_sequence(&self) -> String {
+        self.iter_cols()
+            .map(|col| {
+                // Find the most frequent base in this column
+                // ignore gaps '-' during consensus calculation
+                self.most_frequent_at_site(&col)
+            })
+            .collect()
+    }
     //to write part of the alignment to file
     pub fn write_fasta_part<P: AsRef<Path>>(
         &self,
@@ -395,16 +418,6 @@ impl Alignment<DNA> {
             .max_by_key(|&(_, count)| count)
             .map(|(base, _)| base as char)
             .unwrap_or('-') // Default to gap if column is empty
-    }
-    //to provide a consensus sequence
-    pub fn consensus_sequence(&self) -> String {
-        self.iter_cols()
-            .map(|col| {
-                // Find the most frequent base in this column
-                // ignore gaps '-' during consensus calculation
-                self.most_frequent_base(&col)
-            })
-            .collect()
     }
     //to identify a degenerate site
     pub fn is_degenerate_site(&self, col_idx: usize, threshold: f32) -> bool {
@@ -593,6 +606,14 @@ mod tests {
         let ids = vec!["seq1".to_string(), "seq2".to_string(), "seq3".to_string()];
         Alignment::<DNA>::new(data, 3, ids)
     }
+    fn setup_test_protein_msa() -> Alignment<Protein> {
+        let seq1 = b"MGGR--LDEVATGCHVSA".to_vec(); // 3 rows of 6 columns
+        let seq2 = b"MGGR-ALDEVATGCHVSA".to_vec();
+        let seq3 = b"MGGR-AADEPATGCHVTA".to_vec();
+        let data: Vec<u8> = vec![seq1, seq2, seq3].into_iter().flatten().collect();
+        let ids = vec!["seq1".to_string(), "seq2".to_string(), "seq3".to_string()];
+        Alignment::<Protein>::new(data, 3, ids)
+    }
 
     #[test]
     fn test_row_lookup_by_id() {
@@ -634,12 +655,17 @@ mod tests {
         assert_eq!(result, b"AC--ATGCATGCATGC");
     }
     #[test]
-    fn test_consensus_sequence() {
+    fn test_consensus_sequence_dna() {
         let msa = setup_test_dna_msa();
         let consensus = msa.consensus_sequence();
         assert_eq!(consensus, "ATGC-AATGCATGCATGC".to_string());
     }
-
+    #[test]
+    fn test_consensus_sequence_protein() {
+        let prot_msa = setup_test_protein_msa();
+        let protein_consensus = prot_msa.consensus_sequence();
+        assert_eq!(protein_consensus, "MGGR-ALDEVATGCHVSA".to_string());
+    }
     #[test]
     fn test_protein_column_entropy() {
         // Column 0: Perfectly conserved (M, M) -> Entropy 0
