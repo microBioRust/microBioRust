@@ -114,6 +114,7 @@
 //! highly-optimized Rust memory space into standard JSON strings for use in web applications,
 //! databases, or native Python data pipelines.
 //!
+//!
 //! ### Example Usage in Python
 //!
 //! ```python
