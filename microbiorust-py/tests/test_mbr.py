@@ -69,6 +69,13 @@ def mock_msa(tmp_path):
     path.write_text(content)
     return str(path)
 
+@pytest.fixture
+def mock_protein_msa(tmp_path):
+    """Creates a mock protein FASTA alignment file."""
+    path = tmp_path / "align.fasta"
+    content = ">Seq1\nMGGR--LD\n>Seq2\nMGGR-ALD\n>Seq3\nMGGR-ASD\n"
+    path.write_text(content)
+    return str(path)
 
 @pytest.fixture
 def mock_blast_tab(tmp_path):
@@ -329,12 +336,14 @@ def test_purge_gaps(mock_msa, tmp_path):
     microbiorust.purge_gaps(mock_msa, out_path, 0.5)
     assert os.path.exists(out_path)
 
-
-def test_get_consensus(mock_msa):
+def test_consensus_sequence_dna(mock_msa):
     # given 'ATGC' is constant in the mock, it should be in consensus
-    consensus = microbiorust.get_consensus(mock_msa)
+    consensus = microbiorust.consensus_sequence(mock_msa)
     assert consensus.startswith("ATGC")
 
+def test_consensus_sequence_protein(mock_protein_msa):
+    protein_consensus = microbiorust.consensus_sequence(mock_protein_msa)
+    assert protein_consensus.startswith("MGGR")
 
 # tests for Sequence Metrics
 def test_hydrophobicity():
