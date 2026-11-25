@@ -16,13 +16,47 @@
 //!
 //! Each Record contains:
 //!
-//! 1. A source, ```SourceAttributes```, construct(enum) of counter (source name), start, stop [of source or contig], organism, mol_type, strain, type_material, db_xref
-//! 2. Features, ```FeatureAttributes```, construct(enum) of counter (locus tag), gene (if present), product, codon start, strand, start, stop [of cds/gene]
-//! 3. Sequence features, ```SequenceAttributes```, construct(enum) of counter (locus tag), sequence_ffn (DNA gene sequence) sequence_faa (protein translation), strand, codon start, start, stop [cds/gene]
-//! 4. The DNA sequence of the whole record (or contig)
+//! 1. A source, ```SourceAttributes```, construct(struct) of counter (source name), start, stop [of source or contig], organism, mol_type, strain, type_material, db_xref
+//! 2. Features, ```FeatureAttributes```, construct(struct) of counter (locus tag), gene (if present), product, codon start, strand, start, stop [of cds/gene]
+//! 3. Non Coding Features, ```NonCodingAttributes```, construct(struct) of counter (feature id), start, stop, strand, product (if present)
+//! 4. Sequence features, ```SequenceAttributes```, construct(struct) of counter (locus tag), sequence_ffn (DNA gene sequence) sequence_faa (protein translation), strand, codon start, start, stop [cds/gene]
+//! 5. The DNA sequence of the whole record (or contig)
+//!
+//! Example to extract the protein sequences with simplified genbank! macro use
+//!
+//!```rust
+//! use clap::Parser;
+//! use std::{
+//!     fs::File,
+//!     io,
+//! };
+//! use microBioRust::{
+//!     gbk::Reader,
+//!     genbank,
+//! };
+//!
+//! #[derive(Parser, Debug)]
+//! #[clap(author, version, about)]
+//! struct Arguments {
+//! #[clap(short, long)]
+//! filename: String,
+//! }
+//!
+//! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
+//!            let args = Arguments::parse();
+//!            let records = genbank!(&args.filename);
+//!            for record in records {
+//!	          for (k, v) in &record.cds.attributes {
+//!                  if let Some(seq) = record.seq_features.get_sequence_faa(k) {
+//!		        println!(">{}|{}\n{}", &record.id, &k, seq);
+//!                     }
+//!                  }
+//!            }
+//!            return Ok(());
+//!  }
+//!```
 //!
 //!  Example to extract and print all the protein sequence fasta, example using getters or get_ functionality
-//!
 //!
 //!```rust
 //! use clap::Parser;
@@ -65,40 +99,6 @@
 //!  }
 //!```
 //!
-//!  Example to extract the protein sequences with simplified genbank! macro use
-//!
-//!```rust
-//! use clap::Parser;
-//! use std::{
-//!     fs::File,
-//!     io,
-//! };
-//! use microBioRust::{
-//!     gbk::Reader,
-//!     genbank,
-//! };
-//!
-//! #[derive(Parser, Debug)]
-//! #[clap(author, version, about)]
-//! struct Arguments {
-//! #[clap(short, long)]
-//! filename: String,
-//! }
-//!
-//! pub fn genbank_to_faa() -> Result<(), anyhow::Error> {
-//!            let args = Arguments::parse();
-//!            let records = genbank!(&args.filename);
-//!            for record in records {
-//!	          for (k, v) in &record.cds.attributes {
-//!                  if let Some(seq) = record.seq_features.get_sequence_faa(k) {
-//!		        println!(">{}|{}\n{}", &record.id, &k, seq);
-//!                     }
-//!                  }
-//!            }
-//!            return Ok(());
-//!  }
-//!
-//!```
 //!  Example to save a provided multi- or single genbank file as a GFF file (by joining any multi-genbank)
 //!
 //! ```rust
@@ -159,7 +159,7 @@
 //!        let output_file = format!("{}.gff", &args.filename);
 //!        if std::path::Path::new(&output_file).exists() {
 //!           println!("Deleting existing file: {}", &output_file);
-//!           std::fs::remove_file(&output_file).expect("NOOO");
+//!           std::fs::remove_file(&output_file).expect("failed to delete existing gff3 file");
 //!           }
 //!        gff_write(seq_region.clone(), record_vec, &output_file, true);
 //!        println!("Total records processed: {}", read_counter);
@@ -238,7 +238,7 @@
 //!                 .set_codon_start(1)
 //!                 .set_strand(-1);
 //!	    record.seq_features
-//!	         .set_counter("bb3305".to_string())
+//!	         .set_counter("b3305".to_string())
 //!		 .set_start(RangeValue::Exact(364))
 //!                 .set_stop(RangeValue::Exact(897))
 //!                 .set_sequence_ffn("ATGTCTCGTGTTGCTAAAGCACCGGTCGTTGTTCCTGCCGGCGTTGACGTAAAAATCAAC

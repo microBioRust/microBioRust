@@ -1,6 +1,78 @@
-use paste::paste;
+//! # Shared record types for sequence-annotation formats
+//!
+//! This module holds the format-independent data model that the parsers and
+//! writers share
+//!
+//! ## Structure of a [`Record`]
+//!
+//! A [`Record`] represents one entry (or contig) and holds its identifier,
+//! whole-record DNA `sequence`, `length`, `start`, `end` and `strand`, plus four
+//! feature containers:
+//!
+//! | Field          | Builder type                  | Value type           | Holds                                             |
+//! |----------------|-------------------------------|----------------------|---------------------------------------------------|
+//! | `source_map`   | [`SourceAttributeBuilder`]    | [`SourceAttributes`] | Source/contig details: organism, strain, mol_type |
+//! | `cds`          | [`FeatureAttributeBuilder`]   | [`FeatureAttributes`]| Coding features: gene, product, codon start, etc. |
+//! | `seq_features` | [`SequenceAttributeBuilder`]  | [`SequenceAttributes`]| Gene (`ffn`) and protein (`faa`) sequences        |
+//! | `nc_features`  | [`NonCodingAttributeBuilder`] | [`NonCodingAttributes`]| rRNA, tRNA, ncRNA, regulatory and similar features |
+//!
+//! Each builder wraps an [`AttributeBuilder`], as an ordered map from a key (a locus
+//! tag, or the source name) to a struct of attributes. Eachh field of those
+//! attribute structs is an `Option`, so a feature only carries the values that
+//! were actually present in the input.
+//!
+//! ## Setters and getters
+//!
+//! Each builder has a `set_counter` method that selects the key (for example a
+//! locus tag) that the following setters apply to. Setters are named
+//! `set_<field>`, return `&mut Self` so they can be chained, and create the
+//! entry for the current key if it does not exist yet. Getters are named
+//! `get_<field>`, take the key as `&str` and return `Option<&T>`.
+//!
+//! ```rust
+//! use microBioRust::record::{RangeValue, Record};
+//!
+//! let mut record = Record::new();
+//! record.cds
+//!     .set_counter("b3304".to_string())
+//!     .set_start(RangeValue::Exact(1))
+//!     .set_stop(RangeValue::Exact(354))
+//!     .set_gene("rplR".to_string())
+//!     .set_strand(-1);
+//!
+//! assert_eq!(record.cds.get_gene("b3304"), Some(&"rplR".to_string()));
+//! assert_eq!(record.cds.get_strand("b3304"), Some(&-1));
+//! assert!(record.cds.get_product("b3304").is_none());
+//! ```
+//!
+//! ## Other types
+//!
+//! - [`RangeValue`] is an enum coordinate that is exact, or a partial bound such as
+//!   `<` or `>` in a GenBank location.
+//! - [`FeatureKind`] classifies a feature key (`gene`, `CDS`, `rRNA`, `tRNA`, ...).
+//!   [`FeatureKind::from_key`] maps unknown keys to `MiscFeature`, and
+//!   [`FeatureKind::is_non_coding`] separates non-coding from coding kinds.
+//! - [`TranslTable`] is a validated NCBI translation table number (1 to 33),
+//!   with constants for the standard (1) and bacterial (11) tables.
+//! - [`RecordRead`] and [`Records`] allow any format-specific reader to be used as an
+//!   iterator over records.
+//!
+//! ## Panics and process exits
+//!
+//! - Calling a `set_<field>` method before `set_counter` panics with
+//!   `"Counter key not set"`.
+//! - [`AttributeBuilder::add`], [`AttributeBuilder::insert`] and
+//!   [`AttributeBuilder::validate_all`] print an error on a duplicate key
+//!   or a failed validation
+//!
+//! ## Macros
+//!
+//! Macros`create_getters!` and `create_builder!` generate the getters and
+//! setters for each separate attribute struct.
+
 ///Shared generic record types to reduce duplication between gbk and embl
 ///Minimal initial introduction: defines generic containers and builders that mirror the existing API where possible
+use paste::paste;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -429,48 +501,46 @@ where
         let key = self.counter.clone().expect("Counter key not set");
         self.attributes.entry(key).or_default()
     }
-    pub fn add(&mut self, key: K, value: V) {
-        if self.attributes.contains_key(&key) {
-            eprintln!(
+    pub fn add(&mut self, key: K, value: V) -> anyhow::Result<()> {
+        if let Some(exists) = self.attributes.get(&key) {
+            anyhow::bail!(
                 "ERROR: Duplicate key detected: {:?} already exists.\n\
                  Existing value: {:?}\n\
                  Attempted duplicate: {:?}\n\
                  Halting parser, file is invalid, please fix duplicate",
                 key,
-                self.attributes.get(&key).unwrap(),
+                exists,
                 value
             );
-            std::process::exit(1);
         }
         self.attributes.insert(key, value);
+        Ok(())
     }
-    pub fn insert(&mut self, value: V) {
+    pub fn insert(&mut self, value: V) -> anyhow::Result<()> {
         let key = self.counter.clone().expect("Counter key not set");
-        self.add(key, value);
+        self.add(key, value)
     }
-    pub fn validate_all<F>(&self, source_file: &str, validator: F)
+    pub fn validate_all<F>(&self, source_file: &str, validator: F) -> anyhow::Result<()>
     where
         F: Fn(&K, &V) -> Option<String>,
     {
-        let mut errors = 0;
-        for (key, value) in &self.attributes {
-            if let Some(msg) = validator(key, value) {
-                eprintln!(
-                    "VALIDATION ERROR in {}: key {:?}: {}",
-                    source_file, key, msg
-                );
-                errors += 1;
-            }
+        let errors: Vec<String> = self
+            .attributes
+            .iter()
+            .filter_map(|(key, value)| {
+                validator(key, value).map(|msg| format!("key {:?}: {}", key, msg))
+            })
+            .collect();
+
+        if !errors.is_empty() {
+            anyhow::bail!(
+                "{} validation errors in {}:\n{}",
+                errors.len(),
+                source_file,
+                errors.join("\n")
+            );
         }
-        if errors > 0 {
-            eprintln!("Halting: {} validation errors in {}", errors, source_file);
-            std::process::exit(1);
-        }
-        eprintln!(
-            "OK: {} records validated in {}",
-            self.attributes.len(),
-            source_file
-        );
+        Ok(())
     }
 }
 impl<'a, K, V> IntoIterator for &'a AttributeBuilder<K, V>

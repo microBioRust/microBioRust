@@ -17,8 +17,9 @@
 //!
 //! 1. A source, ```SourceAttributes```, construct(enum) of counter (source name), start, stop [of source or contig], organism, mol_type, strain, type_material, db_xref
 //! 2. Features, ```FeatureAttributes```, construct(enum) of counter (locus tag), gene (if present), product, codon start, strand, start, stop [of cds/gene]
-//! 3. Sequence features, ```SequenceAttributes```, construct(enum) of counter (locus tag), sequence_ffn (DNA gene sequence) sequence_faa (protein translation), strand, codon start, start, stop [cds/gene]
-//! 4. The DNA sequence of the whole record (or contig)
+//! 3. Non Coding Features, ```NonCodingAttributes```, construct(struct) of counter (feature id), start, stop, strand, product (if present)
+//! 4. Sequence features, ```SequenceAttributes```, construct(enum) of counter (locus tag), sequence_ffn (DNA gene sequence) sequence_faa (protein translation), strand, codon start, start, stop [cds/gene]
+//! 5. The DNA sequence of the whole record (or contig)
 //!
 //!  Example to extract and print all the protein sequence fasta, example using getters (or get_ functionality), simplified embl! macro
 //!
