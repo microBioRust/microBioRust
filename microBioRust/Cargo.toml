@@ -48,4 +48,3 @@ quick-xml = { version = "0.38.4", features = ["async-tokio", "escape-html"] }
 async-compression = { version = "0.4.35", features = ["tokio", "gzip"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
-flate2 = "1.1.5"
