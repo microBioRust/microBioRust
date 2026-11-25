@@ -29,6 +29,24 @@ macro_rules! impl_build_features {
     };
 }
 #[macro_export]
+macro_rules! impl_build_noncoding {
+    ($fn_name:ident, $record_type:ty, $attrs_path:path) => {
+        fn $fn_name(
+            r: &$record_type,
+            py: ::pyo3::Python<'_>,
+        ) -> ::std::collections::HashMap<String, ::pyo3::Py<$crate::PyNonCodingInfo>> {
+            let mut map = ::std::collections::HashMap::new();
+            for (id, attrs) in &r.nc_features.noncoding_attributes {
+                let info = $crate::PyNonCodingInfo::from_attributes(id, attrs);
+                let obj =
+                    ::pyo3::Py::new(py, info).expect("failed to allocate the PyNonCodingInfo");
+                map.insert(id.clone(), obj);
+            }
+            map
+        }
+    };
+}
+#[macro_export]
 macro_rules! impl_build_sequences {
     ($fn_name:ident, $record_type:ty, $attrs_path:path) => {
         fn $fn_name(

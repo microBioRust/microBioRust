@@ -31,6 +31,12 @@ def mock_gbk(tmp_path):
                              /gene="rplR"
                              /translation="MDKKSARIRRATRARRKLQELGATRLVVHRTPRHIYAQVIAPNGSLVAASTVEKAIAEQLKYTGNKDAAAAVGKAVAERALEKGIKDVSFDRSGFQYHGRVQALDAAREAGLQ"
                              /product="50S ribosomal subunit protein L18"
+             gene            355..363
+                             /locus_tag="b3304_trna"
+             tRNA            355..363
+                             /locus_tag="b3304_trna"
+                             /gene="trnaX"
+                             /product="tRNA-Val"
              gene            complement(364..897)
                              /locus_tag="b3305"
              CDS             complement(364..897)
@@ -39,6 +45,12 @@ def mock_gbk(tmp_path):
                              /gene="rplF"
                              /translation="MSRVAKAPVVVPAGVDVKINGQVITIKGKNGELTRTLNDAVEVKHNTLTFGPRDGYADGWAQAGTARALLNSMVIGVTEGFTKKLQLVGVGYRAAVKGNVINLSGFSHPVDHQLPAGITAECPTQTEIVLKGADKQVIGQVAADLRAYRRPEPYKGKGVRYADVVRTKEAKK"
                              /product="50S ribosomal subunit protein L6"
+             gene            898..910
+                             /locus_tag="b3306_rrna"
+             rRNA            898..910
+                             /locus_tag="b3306_rrna"
+                             /gene="rrsH"
+                             /product="truncated 16S ribosomal RNA"
         ORIGIN
                 1 TTAGAACTGA AGGCCAGCTT CACGGGCAGC ATCTGCCAGT GCCTGGACAC GACCATGATA
                61 TTGGAACCCG GAACGGTCAA AGGATACATC TTTGATGCCT TTTTCCAGAG CGCGTTCAGC
@@ -86,6 +98,45 @@ def mock_blast_tab(tmp_path):
     path.write_text(content)
     return str(path)
 
+def test_noncoding_collection_and_attributes(mock_gbk):
+    """Verify non-coding features parse into NonCodingCollection with expected attributes."""
+    collection = microbiorust.parse_gbk(mock_gbk)
+    first_key = list(collection.keys())[0]
+    record = collection[first_key]
+
+    nc_col = record.noncoding()
+    assert len(nc_col) == 2
+    assert "nc_1" in nc_col
+    assert "nc_2" in nc_col
+    assert "b3304" not in nc_col  # CDS features should not appear in NonCodingCollection
+
+    # Inspect tRNA attributes
+    trna = nc_col["nc_1"]
+    assert trna.product == "tRNA-Val"
+    assert trna.start == 355
+    assert trna.stop == 363
+    assert trna.strand == 1
+
+    # Inspect rRNA attributes
+    rrna = nc_col["nc_2"]
+    assert rrna.product == "truncated 16S ribosomal RNA"
+    assert rrna.start == 898
+    assert rrna.stop == 910
+    assert rrna.strand == 1
+
+    # Verify dictionary-style methods & JSON serialization
+    assert set(nc_col.keys()) == {"nc_1", "nc_2"}
+    assert len(list(nc_col.values())) == 2
+    for tag, info in nc_col.items():
+        assert nc_col[tag].product == info.product
+
+    nc_dict = json.loads(nc_col.to_json())
+    assert "nc_1" in nc_dict
+    assert "nc_2" in nc_dict
+
+    # Missing key raises clean KeyError
+    with pytest.raises(KeyError):
+        _ = nc_col["non_existent_ncrna"]
 
 def test_gbk_loader_aliases(mock_gbk):
     """Verify all specialized GBK loaders return a valid collection"""

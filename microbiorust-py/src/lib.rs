@@ -10,12 +10,13 @@
 //! ```bash
 //! pip install microbiorust
 //! ```
+//!
 //! If you are on Mac OSX and experience a cc linker error when importing, please add the libpython to the LIBRARY_PATH or DYLD_LIBRARY_PATH
 //! for example on conda:
 //! ```bash
 //! export DYLD_LIBRARY_PATH=$CONDA_PREFIX/lib:$DYLD_LIBRARY_PATH
-//! ```!
-//! //! ## Collections
+//! ```
+//! ## Collections
 //!
 //! microbiorust uses typed collections — the return type tells you exactly what data is available:
 //!
@@ -24,6 +25,7 @@
 //! | `RecordCollection` | `parse_gbk`, `parse_embl` | contig-level records, `source`, `fna` |
 //! | `SequenceCollection` | `record.sequences()` | `locus_tag`, `has_faa`, `has_ffn` |
 //! | `FeatureCollection` | `record.features()` | `locus_tag`, `gene`, `product`, `start`, `stop`, `strand` |
+//! | `NonCodingCollection` | `record.noncoding()` | `feature_id`, `start`, `stop`, `strand`, `product` |
 //! | `FaaCollection` | `gbk_to_faa`, `embl_to_faa`, `record.faa()` | `locus_tag`, `faa` |
 //! | `FfnCollection` | `gbk_to_ffn`, `embl_to_ffn`, `record.ffn()` | `locus_tag`, `ffn` |
 //!
@@ -84,10 +86,11 @@
 //!     for info in record.ffn().values():
 //!         print(f">{info.locus_tag}\n{info.ffn}")
 //!
-//!     # both sequences and features together — SequenceCollection/FeatureCollection
+//!     # both sequences and features together — SequenceCollection/FeatureCollection/NonCodingCollection
 //!     # faa and ffn are Optional here in case not every locus tag has both
 //!     sequences = record.sequences()
 //!     features = record.features()
+//!     noncoding_features = record.noncoding()
 //!
 //!     if "b3304" in features:
 //!         feat = features["b3304"]
@@ -103,7 +106,7 @@
 //! - **"Write everything to file"** → `collection.write_faa()` / `write_ffn()` / `write_fna()`
 //! - **"Get all proteins across a whole genome file"** → `gbk_to_faa()` — flat, one shot
 //! - **"Work per genome record (contig-wise)"** → `parse_gbk()` then `record.faa()` or `record.ffn()`
-//! - **"Need features and sequences together"** → `parse_gbk()` then `record.sequences()` + `record.features()`
+//! - **"Need features and sequences together"** → `parse_gbk()` then `record.sequences()` + `record.features()` + `record.noncoding()`
 //! - **"Count proteins directly without loading sequences"** → `gbk_to_faa_count()`
 //! - **"Export data to web apps, databases, or Pandas"** → `collection.to_json()`
 //!
@@ -178,19 +181,21 @@
 #[macro_use]
 mod macros;
 
+use anyhow;
 use microBioRust::align::{Alignment, AlignmentKind, load_msa_auto};
 use microBioRust::blast::*;
 use microBioRust::embl;
 use microBioRust::embl::gff_write as embl_gff_write;
-use microBioRust::gbk::{
-    FeatureAttributeBuilder, FeatureAttributes, RangeValue, Reader, Record, SequenceAttributes,
-    gff_write,
-};
+use microBioRust::gbk::gff_write;
 use microBioRust::genbank;
+use microBioRust::record::{
+    FeatureAttributeBuilder, FeatureAttributes, FeatureKind, NonCodingAttributeBuilder,
+    NonCodingAttributes, RangeValue, Record, SequenceAttributeBuilder, SequenceAttributes,
+};
 use microBioRust_seqmetrics::metrics::amino_counts as rust_amino_counts;
 use microBioRust_seqmetrics::metrics::amino_percentage as rust_amino_percentage;
 use microBioRust_seqmetrics::metrics::hydrophobicity as rust_hydrophobicity;
-use pyo3::exceptions::{PyIOError, PyKeyError};
+use pyo3::exceptions::{PyIOError, PyKeyError, PyValueError};
 use pyo3::types::PyList;
 use pyo3::{prelude::*, types::PyModule};
 use pyo3_stub_gen::define_stub_info_gatherer;
@@ -203,15 +208,43 @@ use std::io::BufWriter;
 use std::ops::Range;
 use std::{
     collections::BTreeMap,
-    fs::OpenOptions,
+    fs::{File, OpenOptions},
     io::{self, Write},
 };
 use tokio::io::AsyncBufReadExt;
 
-#[derive(Serialize, Clone)]
-pub enum InternalRecord {
-    Gbk(microBioRust::gbk::Record),
-    Embl(microBioRust::embl::Record),
+//which source format the record was parsed from
+#[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceFormat {
+    Gbk,
+    Embl,
+    GFF,
+}
+impl SourceFormat {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SourceFormat::Gbk => "GBK",
+            SourceFormat::Embl => "EMBL",
+            SourceFormat::GFF => "GFF",
+        }
+    }
+}
+
+/// GenBank/EMBL feature key for a `FeatureKind` (the inverse of `FeatureKind::from_key`).
+fn feature_kind_key(kind: &FeatureKind) -> &'static str {
+    match kind {
+        FeatureKind::Gene => "gene",
+        FeatureKind::Cds => "CDS",
+        FeatureKind::Rrna => "rRNA",
+        FeatureKind::Trna => "tRNA",
+        FeatureKind::Tmrna => "tmRNA",
+        FeatureKind::Ncrna => "ncRNA",
+        FeatureKind::MiscRna => "misc_RNA",
+        FeatureKind::Regulatory => "regulatory",
+        FeatureKind::RepeatRegion => "repeat_region",
+        FeatureKind::MobileElement => "mobile_element",
+        FeatureKind::MiscFeature => "misc_feature",
+    }
 }
 
 //PyFeatureInfo contains all the feature attributes, there is an extras field for any uncaptured field (e.g. db_xref, EC)
@@ -269,6 +302,75 @@ impl PyFeatureInfo {
         format!(
             "FeatureInfo(locus_tag='{}', gene={:?}, product={:?}, {}..{}, strand={}, extras={:?})",
             self.locus_tag, self.gene, self.product, start, stop, strand, self.extras
+        )
+    }
+}
+
+//PyNonCodingInfo contains the attributes of a non-coding feature (rRNA, tRNA, ncRNA, regulatory, etc.)
+#[gen_stub_pyclass]
+#[pyclass(skip_from_py_object)]
+#[derive(Serialize, Clone)]
+pub struct PyNonCodingInfo {
+    #[pyo3(get)]
+    pub feature_id: String,
+    #[pyo3(get)]
+    pub feature_type: Option<String>,
+    #[pyo3(get)]
+    pub product: Option<String>,
+    #[pyo3(get)]
+    pub start: Option<u32>,
+    #[pyo3(get)]
+    pub stop: Option<u32>,
+    #[pyo3(get)]
+    pub strand: Option<i8>,
+}
+
+impl PyNonCodingInfo {
+    pub fn new(id: &str) -> Self {
+        Self {
+            feature_id: id.to_string(),
+            feature_type: None,
+            product: None,
+            start: None,
+            stop: None,
+            strand: None,
+        }
+    }
+
+    ///built from the shared Rust record type
+    pub fn from_attributes(id: &str, attrs: &NonCodingAttributes) -> Self {
+        Self {
+            feature_id: id.to_string(),
+            feature_type: attrs
+                .feature_type
+                .as_ref()
+                .map(|k| feature_kind_key(k).to_string()),
+            product: attrs.product.clone(),
+            start: attrs.start.as_ref().map(|v| v.get_value()),
+            stop: attrs.stop.as_ref().map(|v| v.get_value()),
+            strand: attrs.strand,
+        }
+    }
+}
+#[gen_stub_pymethods]
+#[pymethods]
+impl PyNonCodingInfo {
+    pub fn __repr__(&self) -> String {
+        let start = self
+            .start
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "None".into());
+        let stop = self
+            .stop
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "None".into());
+        let strand = self
+            .strand
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "None".into());
+        format!(
+            "NonCodingInfo(feature_id='{}', feature_type={:?}, product={:?}, {}..{}, strand={})",
+            self.feature_id, self.feature_type, self.product, start, stop, strand
         )
     }
 }
@@ -338,12 +440,48 @@ impl LocusTagIterator {
 //FeatureCollection is a HashMap of Id, Py<PyFeatureInfo>,
 //since they are similar except in the data and types contained, both are built here from macro in macro.rs
 crate::create_collection!(FeatureCollection, PyFeatureInfo, "FeatureCollection");
+crate::create_collection!(NonCodingCollection, PyNonCodingInfo, "NonCodingCollection");
 crate::create_collection!(SequenceCollection, PySequenceInfo, "SequenceCollection");
+
+fn io_err(filename: &str, e: std::io::Error) -> PyErr {
+    PyIOError::new_err(format!("{}: {}", filename, e))
+}
+// Accessors with a matching signature so one writer can serve both faa and ffn.
+fn faa_for<'a>(r: &'a Record, tag: &str) -> Option<&'a String> {
+    r.seq_features.get_sequence_faa(tag)
+}
+fn ffn_for<'a>(r: &'a Record, tag: &str) -> Option<&'a String> {
+    r.seq_features.get_sequence_ffn(tag)
+}
 //generate the RecordCollection separately with the write functions
 #[gen_stub_pyclass]
 #[pyclass]
 pub struct RecordCollection {
     pub inner: HashMap<String, Py<PyRecord>>,
+}
+impl RecordCollection {
+    fn write_cds_fasta(
+        &self,
+        filename: &str,
+        py: Python<'_>,
+        sequence_for: for<'a> fn(&'a Record, &str) -> Option<&'a String>,
+    ) -> PyResult<(String, usize)> {
+        let f = std::fs::File::create(filename).map_err(|e| io_err(filename, e))?;
+        let mut w = BufWriter::new(f);
+        let mut count = 0;
+        for obj in self.inner.values() {
+            let record = obj.bind(py).borrow();
+            let r = &record.inner;
+            for tag in r.cds.attributes.keys() {
+                if let Some(seq) = sequence_for(r, tag) {
+                    writeln!(w, ">{}|{}\n{}", r.id, tag, seq).map_err(|e| io_err(filename, e))?;
+                    count += 1;
+                }
+            }
+        }
+        w.flush().map_err(|e| io_err(filename, e))?;
+        Ok((filename.to_string(), count))
+    }
 }
 #[gen_stub_pymethods]
 #[pymethods]
@@ -384,79 +522,22 @@ impl RecordCollection {
     }
     //write all the faa format to a file, no conversion to Python overhead
     fn write_faa(&self, filename: &str, py: Python<'_>) -> PyResult<(String, usize)> {
-        let mut count = 0;
-        let f = std::fs::File::create(filename).map_err(|e| PyIOError::new_err(e.to_string()))?;
-        let mut w = BufWriter::new(f);
-        for obj in self.inner.values() {
-            let record = obj.bind(py).borrow();
-            match &record.inner {
-                InternalRecord::Gbk(r) => {
-                    for (tag, _) in &r.cds.attributes {
-                        if let Some(seq) = r.seq_features.get_sequence_faa(tag) {
-                            writeln!(w, ">{}|{}\n{}", r.id, tag, seq)
-                                .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                            count += 1;
-                        }
-                    }
-                }
-                InternalRecord::Embl(r) => {
-                    for (tag, _) in &r.cds.attributes {
-                        if let Some(seq) = r.seq_features.get_sequence_faa(tag) {
-                            writeln!(w, ">{}|{}\n{}", r.id, tag, seq)
-                                .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                            count += 1;
-                        }
-                    }
-                }
-            }
-        }
-        Ok((filename.to_string(), count))
+        self.write_cds_fasta(filename, py, faa_for)
     }
-    //write all the ffn to a file, no conversion to python overhead
     fn write_ffn(&self, filename: &str, py: Python<'_>) -> PyResult<(String, usize)> {
-        let mut count = 0;
-        let f = std::fs::File::create(filename).map_err(|e| PyIOError::new_err(e.to_string()))?;
-        let mut w = BufWriter::new(f);
-        for obj in self.inner.values() {
-            let record = obj.bind(py).borrow();
-            match &record.inner {
-                InternalRecord::Gbk(r) => {
-                    for (tag, _) in &r.cds.attributes {
-                        if let Some(seq) = r.seq_features.get_sequence_ffn(tag) {
-                            writeln!(w, ">{}|{}\n{}", r.id, tag, seq)
-                                .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                            count += 1;
-                        }
-                    }
-                }
-                InternalRecord::Embl(r) => {
-                    for (tag, _) in &r.cds.attributes {
-                        if let Some(seq) = r.seq_features.get_sequence_ffn(tag) {
-                            writeln!(w, ">{}|{}\n{}", r.id, tag, seq)
-                                .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                            count += 1;
-                        }
-                    }
-                }
-            }
-        }
-        Ok((filename.to_string(), count))
+        self.write_cds_fasta(filename, py, ffn_for)
     }
-    //write fna of records to a file, no conversion to python overhead
     fn write_fna(&self, filename: &str, py: Python<'_>) -> PyResult<(String, usize)> {
-        let mut count = 0;
-        let f = std::fs::File::create(filename).map_err(|e| PyIOError::new_err(e.to_string()))?;
+        let f = std::fs::File::create(filename).map_err(|e| io_err(filename, e))?;
         let mut w = BufWriter::new(f);
+        let mut count = 0;
         for obj in self.inner.values() {
             let record = obj.bind(py).borrow();
-            match &record.inner {
-                InternalRecord::Gbk(r) => writeln!(w, ">{}\n{}", r.id, r.sequence)
-                    .map_err(|e| PyIOError::new_err(e.to_string()))?,
-                InternalRecord::Embl(r) => writeln!(w, ">{}\n{}", r.id, r.sequence)
-                    .map_err(|e| PyIOError::new_err(e.to_string()))?,
-            }
+            writeln!(w, ">{}\n{}", record.inner.id, record.inner.sequence)
+                .map_err(|e| io_err(filename, e))?;
             count += 1;
         }
+        w.flush().map_err(|e| io_err(filename, e))?;
         Ok((filename.to_string(), count))
     }
     fn values<'py>(
@@ -504,29 +585,25 @@ impl RecordCollection {
     }
 }
 //ability to return a HashMap to python containing all the data
-//create build sequences and build features methods for both gbk and embl types
-//TODO: replace with a single method for each if we move from gbk and embl types to a generic
-// Generate the two functions
+//create build sequences and build features methods for both gbk and embl types as record
+// Generate the three functions
+
 crate::impl_build_sequences!(
-    build_sequences_gbk,
-    microBioRust::gbk::Record,
-    microBioRust::gbk::SequenceAttributes
+    build_sequences,
+    microBioRust::record::Record,
+    microBioRust::record::SequenceAttributes
 );
-crate::impl_build_sequences!(
-    build_sequences_embl,
-    microBioRust::embl::Record,
-    microBioRust::embl::SequenceAttributes
+crate::impl_build_noncoding!(
+    build_noncoding,
+    microBioRust::record::Record,
+    microBioRust::record::NonCodingAttributes
 );
 crate::impl_build_features!(
-    build_features_gbk,
-    microBioRust::gbk::Record,
-    microBioRust::gbk::FeatureAttributes
+    build_features,
+    microBioRust::record::Record,
+    microBioRust::record::FeatureAttributes
 );
-crate::impl_build_features!(
-    build_features_embl,
-    microBioRust::embl::Record,
-    microBioRust::embl::FeatureAttributes
-);
+
 create_collection!(FaaCollection, PyFaaInfo, "FaaCollection");
 create_collection!(FfnCollection, PyFfnInfo, "FfnCollection");
 //create a PyRecord with inner of InternalRecord for gbk and embl, contains .sequences() and .features() methods
@@ -536,72 +613,58 @@ create_collection!(FfnCollection, PyFfnInfo, "FfnCollection");
 #[pyclass(skip_from_py_object)]
 #[derive(Serialize, Clone)]
 pub struct PyRecord {
-    inner: InternalRecord,
+    format: SourceFormat,
+    inner: Record,
 }
 #[gen_stub_pymethods]
 #[pymethods]
 impl PyRecord {
     fn id(&self) -> &str {
-        match &self.inner {
-            InternalRecord::Gbk(r) => &r.id,
-            InternalRecord::Embl(r) => &r.id,
-        }
+        &self.inner.id
     }
-    //whole-genome nucleotide — distinct from per-CDS ffn
+    //whole-genome nucleotide of the whole record — distinct from per-CDS ffn
     fn sequence(&self) -> &str {
-        match &self.inner {
-            InternalRecord::Gbk(r) => &r.sequence,
-            InternalRecord::Embl(r) => &r.sequence,
-        }
+        &self.inner.sequence
+    }
+    fn format(&self) -> &'static str {
+        self.format.as_str()
     }
     fn locus_tag(&self) -> Vec<String> {
-        match &self.inner {
-            InternalRecord::Gbk(r) => r.cds.attributes.keys().cloned().collect(),
-            InternalRecord::Embl(r) => r.cds.attributes.keys().cloned().collect(),
-        }
+        self.inner.cds.attributes.keys().cloned().collect()
     }
     // py token required — Python objects allocated inside build helpers
     fn sequences(&self, py: Python<'_>) -> SequenceCollection {
-        let inner = match &self.inner {
-            InternalRecord::Gbk(r) => build_sequences_gbk(r, py),
-            InternalRecord::Embl(r) => build_sequences_embl(r, py),
-        };
-        SequenceCollection { inner }
+        SequenceCollection {
+            inner: build_sequences(&self.inner, py),
+        }
     }
     fn features(&self, py: Python<'_>) -> FeatureCollection {
-        let inner = match &self.inner {
-            InternalRecord::Gbk(r) => build_features_gbk(r, py),
-            InternalRecord::Embl(r) => build_features_embl(r, py),
-        };
-        FeatureCollection { inner }
+        FeatureCollection {
+            inner: build_features(&self.inner, py),
+        }
+    }
+    fn noncoding(&self, py: Python<'_>) -> NonCodingCollection {
+        NonCodingCollection {
+            inner: build_noncoding(&self.inner, py),
+        }
     }
     fn faa(&self, py: Python<'_>) -> FaaCollection {
-        let inner = match &self.inner {
-            InternalRecord::Gbk(r) => build_faa_from_gbk(r, py),
-            InternalRecord::Embl(r) => build_faa_from_embl(r, py),
-        };
-        FaaCollection { inner }
+        FaaCollection {
+            inner: build_faa(&self.inner, py),
+        }
     }
     fn ffn(&self, py: Python<'_>) -> FfnCollection {
-        let inner = match &self.inner {
-            InternalRecord::Gbk(r) => build_ffn_from_gbk(r, py),
-            InternalRecord::Embl(r) => build_ffn_from_embl(r, py),
-        };
-        FfnCollection { inner }
+        FfnCollection {
+            inner: build_ffn(&self.inner, py),
+        }
     }
     fn __repr__(&self) -> String {
-        match &self.inner {
-            InternalRecord::Gbk(r) => format!(
-                "PyRecord(id='{}', format=GBK,  seq_len={})",
-                r.id,
-                r.sequence.len()
-            ),
-            InternalRecord::Embl(r) => format!(
-                "PyRecord(id='{}', format=EMBL, seq_len={})",
-                r.id,
-                r.sequence.len()
-            ),
-        }
+        format!(
+            "PyRecord(id='{}', format={}, seq_len={})",
+            self.inner.id,
+            self.format.as_str(),
+            self.inner.sequence.len()
+        )
     }
     fn __getitem__(&self, py: Python<'_>, tag: &str) -> PyResult<Py<PyAny>> {
         let features = self.features(py);
@@ -622,27 +685,63 @@ impl PyRecord {
         Err(PyKeyError::new_err(tag.to_string()))
     }
 }
+//parses both gbk and embl formats to return the RecordCollection
+fn collect_records<I, E>(filename: &str, format_name: &str, items: I) -> PyResult<Vec<Record>>
+where
+    I: Iterator<Item = std::result::Result<Record, E>>,
+    E: std::fmt::Display,
+{
+    let mut records = Vec::new();
+    for item in items {
+        let record = item.map_err(|e| {
+            PyValueError::new_err(format!("failed to parse '{}': {:#}", filename, e))
+        })?;
+        records.push(record);
+    }
+    if records.is_empty() {
+        return Err(PyValueError::new_err(format!(
+            "no {} records found in '{}'",
+            format_name, filename
+        )));
+    }
+    Ok(records)
+}
 //parse genbank function - returns the RecordCollection, good for fna and metadata from source
+fn read_gbk_records(filename: &str) -> PyResult<Vec<Record>> {
+    let file = File::open(&filename)
+        .map_err(|e| PyIOError::new_err(format!("cannot open {}: {}", &filename, e)))?;
+    let reader = microBioRust::gbk::Reader::new(file);
+    collect_records(&filename, "Genbank", reader.records())
+}
+fn read_embl_records(filename: &str) -> PyResult<Vec<Record>> {
+    let file = File::open(&filename)
+        .map_err(|e| PyIOError::new_err(format!("cannot open {}: {}", &filename, e)))?;
+    let reader = microBioRust::embl::Reader::new(file);
+    collect_records(&filename, "EMBL", reader.records())
+}
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn parse_gbk(filename: &str, py: Python<'_>) -> PyResult<RecordCollection> {
+    let records = py.detach(|| read_gbk_records(filename))?;
     let mut inner = HashMap::new();
-    for r in genbank!(filename) {
+    for r in records {
         let id = r.id.clone();
         //TODO: STRICT -Duplicate Check and line number error
-        //if inner.contains_key(&id) {
-        //    return Err(PyValueError::new_err(format!(
-        //       "Integrity Error: Duplicate record ID '{}' encountered in file '{}'. \
-        //         Check line {} (approx). Bioinformatic formats require unique identifiers.",
-        //        id,
-        //        filename,
-        //        r.start_line // Assumes microBioRust tracks the line number
-        //    )));
-        //}
+        if inner.contains_key(&id) {
+            return Err(PyValueError::new_err(format!(
+                "Duplicate record ID '{}' encountered in file '{}', id must be unique",
+                id, &filename
+            )));
+            //       Check line {} (approx). format requires unique identifiers.",
+            //        r.start_line // Assumes microBioRust tracks the line number
+            //    )));
+            //}
+        }
         let obj = Py::new(
             py,
             PyRecord {
-                inner: InternalRecord::Gbk(r),
+                format: SourceFormat::Gbk,
+                inner: r,
             },
         )
         .expect("Failed to allocate PyRecord");
@@ -654,23 +753,26 @@ pub fn parse_gbk(filename: &str, py: Python<'_>) -> PyResult<RecordCollection> {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn parse_embl(filename: &str, py: Python<'_>) -> PyResult<RecordCollection> {
+    let records = py.detach(|| read_embl_records(filename))?;
     let mut inner = HashMap::new();
-    for r in embl!(filename) {
+    for r in records {
         let id = r.id.clone();
         //TODO: STRICT -Duplicate Check and line number error
-        //if inner.contains_key(&id) {
-        //    return Err(PyValueError::new_err(format!(
-        //       "Integrity Error: Duplicate record ID '{}' encountered in file '{}'. \
-        //         Check line {} (approx). Bioinformatic formats require unique identifiers.",
-        //        id,
-        //        filename,
-        //        r.start_line // Assumes microBioRust tracks the line number
-        //    )));
-        //}
+        if inner.contains_key(&id) {
+            return Err(PyValueError::new_err(format!(
+                "Duplicate record ID '{}' encountered in file '{}', id must be unique",
+                id, &filename
+            )));
+            //       Check line {} (approx). format requires unique identifiers.",
+            //        r.start_line // Assumes microBioRust tracks the line number
+            //    )));
+            //}
+        }
         let obj = Py::new(
             py,
             PyRecord {
-                inner: InternalRecord::Embl(r),
+                format: SourceFormat::Embl,
+                inner: r,
             },
         )
         .expect("Failed to allocate PyRecord");
@@ -678,7 +780,6 @@ pub fn parse_embl(filename: &str, py: Python<'_>) -> PyResult<RecordCollection> 
     }
     Ok(RecordCollection { inner })
 }
-
 //the fna is the whole record nucleotide sequence
 //python callers use record.sequence() to get the string.
 #[gen_stub_pyfunction]
@@ -754,14 +855,9 @@ impl PyFaaInfo {
     }
 }
 crate::impl_build_faa!(
-    build_faa_from_gbk,
-    microBioRust::gbk::Record,
-    microBioRust::gbk::SequenceAttributes
-);
-crate::impl_build_faa!(
-    build_faa_from_embl,
-    microBioRust::embl::Record,
-    microBioRust::embl::SequenceAttributes
+    build_faa,
+    microBioRust::record::Record,
+    microBioRust::record::SequenceAttributes
 );
 
 #[gen_stub_pyclass]
@@ -786,15 +882,11 @@ impl PyFfnInfo {
     }
 }
 crate::impl_build_ffn!(
-    build_ffn_from_gbk,
-    microBioRust::gbk::Record,
-    microBioRust::gbk::SequenceAttributes
+    build_ffn,
+    microBioRust::record::Record,
+    microBioRust::record::SequenceAttributes
 );
-crate::impl_build_ffn!(
-    build_ffn_from_embl,
-    microBioRust::embl::Record,
-    microBioRust::embl::SequenceAttributes
-);
+
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn embl_to_faa(filename: &str, py: Python<'_>) -> PyResult<FaaCollection> {
@@ -1203,11 +1295,13 @@ fn _microbiorust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     //register classes
     m.add_class::<PyRecord>()?;
     m.add_class::<PyFeatureInfo>()?;
+    m.add_class::<PyNonCodingInfo>()?;
     m.add_class::<PySequenceInfo>()?;
 
     //register Collections and Iterators!
     m.add_class::<RecordCollection>()?;
     m.add_class::<FeatureCollection>()?;
+    m.add_class::<NonCodingCollection>()?;
     m.add_class::<SequenceCollection>()?;
     m.add_class::<LocusTagIterator>()?;
     Ok(())
