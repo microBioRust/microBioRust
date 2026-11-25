@@ -36,3 +36,7 @@ venv/
 site/
 static/
 *.gff
+cleaned_dna.fasta
+new_output_embl.gbk
+RLprots.ffn
+RLprots.fna
