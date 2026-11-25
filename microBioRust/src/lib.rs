@@ -14,3 +14,6 @@ pub mod align;
 pub mod gbk;
 pub mod blast;
 pub mod record;
+
+/// The version of this crate, taken from `Cargo.toml` at compile time.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");                
