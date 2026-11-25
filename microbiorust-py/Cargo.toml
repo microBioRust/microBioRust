@@ -2,7 +2,7 @@
 
 [package]
 name = "microbiorust-py"
-version = "0.1.6"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 keywords = ["bioinformatics","micro","bio","genomics","sequence-analysis"]
@@ -28,8 +28,8 @@ default = []
 extension-module = ["pyo3/extension-module"]
 
 [dependencies]
-microBioRust = { version = "0.2.0", path = "../microBioRust" }
-microBioRust-seqmetrics = { version = "0.2.0", path="../seqmetrics" }
+microBioRust = "0.2.0"
+microBioRust-seqmetrics = "0.2.0"
 pythonize = "0.29.0"
 pyo3-stub-gen = "0.23.0" 
 tokio = { version = "1.49.0", features = ["full"] }
